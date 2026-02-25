@@ -246,8 +246,8 @@ using NonZeroFillType = ConditionFillType<NonZeroCondition>;
 using IgnoreFillType = ConditionFillType<UnsatisfiableCondition>;
 
 struct PolyEdgeInfo {
-	Handle id;
-	BoundaryType type; // 上边界或下边界, 但如果是上边界, 则该边需要反转
+	Handle id = npos;
+	BoundaryType type = BoundaryType::Unknown; // 上边界或下边界, 但如果是上边界, 则该边需要反转
 };
 
 template<class Edge>
@@ -715,22 +715,21 @@ public:
 
 			Handle first = i;
 			Handle current = i;
+			BoundaryType first_boundary = HasLowerBoundary(types[current]) ?
+				BoundaryType::LowerBoundary : BoundaryType::UpperBoundary;
+			BoundaryType curr_boundary = first_boundary;
 			Handle next = tailor::npos;
+			BoundaryType next_boundary = BoundaryType::Unknown;
 
 			do {
 				assert(tailor::npos != current);
 
 				auto edge_id = current;
 				const auto& edge = edges[edge_id];
-				auto curr_edge_type = types[edge_id];
-
-				assert(IsBoundaryX(curr_edge_type));
+				assert(IsBoundaryX(curr_boundary));
 
 				// 必须为上边界或下边界
-				if (HasLowerBoundary(curr_edge_type)) {
-					// 移除下边界属性
-					types[edge_id] = RemoveLowerBoundary(curr_edge_type);
-
+				if (HasLowerBoundary(curr_boundary)) {
 					// 如果是下边界
 					// 则本条边的终点和下条边的起点是同一个顶点(所有边始终为正向)
 					auto& vertex = vertices[edge.endPntGroup];
@@ -744,13 +743,16 @@ public:
 					std::size_t index = std::distance(span0.begin(), loc);
 
 					Handle target = tailor::npos;
+					BoundaryType target_boundary = BoundaryType::Unknown;
 
 					// 此处顺时针找第一个上边界
 					{
-						std::span<const Handle> group = span0.last(span0.size() - index - 1);
+						//std::span<const Handle> group = span0.last(span0.size() - index - 1);
+						std::span<const Handle> group = span0.last(span0.size() - index);
 						for (auto e : group) {
-							if (types[e] == BoundaryType::UpperBoundary) {
+							if (HasUpperBoundary(types[e])) {
 								target = e;
+								target_boundary = BoundaryType::UpperBoundary;
 								break;
 							}
 						}
@@ -760,8 +762,9 @@ public:
 						// 必须反着遍历
 						//
 						for (auto e : std::ranges::reverse_view(span1)) {
-							if (types[e] == BoundaryType::LowerBoundary) { // 方向相同, 边界属性也相同
+							if (HasLowerBoundary(types[e])) { // 方向相同, 边界属性也相同
 								target = e;
+								target_boundary = BoundaryType::LowerBoundary;
 								break;
 							}
 						}
@@ -770,16 +773,18 @@ public:
 					if (tailor::npos == target) {
 						std::span<const Handle> group = span0.first(index);
 						for (auto e : group) {
-							if (types[e] == BoundaryType::UpperBoundary) {
+							if (HasUpperBoundary(types[e])) {
 								target = e;
+								target_boundary = BoundaryType::UpperBoundary;
 								break;
 							}
 						}
 					}
 
 					next = target;
+					next_boundary = target_boundary;
 				} else {
-					assert(HasUpperBoundary(curr_edge_type));
+					assert(HasUpperBoundary(curr_boundary));
 
 					// 如果是上边界
 					// 则本条边的起点和下条边的终点是同一个顶点(所有边始终为正向)
@@ -794,13 +799,15 @@ public:
 					std::size_t index = std::distance(span0.begin(), loc);
 
 					Handle target = tailor::npos;
+					BoundaryType target_boundary = BoundaryType::Unknown;
 
 					// 此处顺时针找
 					{
-						std::span<const Handle> group = span0.first(index);
+						std::span<const Handle> group = span0.first(index + 1);
 						for (auto e : std::ranges::reverse_view(group)) {
-							if (types[e] == BoundaryType::LowerBoundary) {
+							if (HasLowerBoundary(types[e])) {
 								target = e;
+								target_boundary = BoundaryType::LowerBoundary;
 								break;
 							}
 						}
@@ -809,8 +816,9 @@ public:
 					if (tailor::npos == target) {
 						// 必须反着遍历
 						for (auto e : span1) {
-							if (types[e] == BoundaryType::UpperBoundary) { // 方向相同, 边界属性也相同
+							if (HasUpperBoundary(types[e])) { // 方向相同, 边界属性也相同
 								target = e;
+								target_boundary = BoundaryType::UpperBoundary;
 								break;
 							}
 						}
@@ -819,27 +827,216 @@ public:
 					if (tailor::npos == target) {
 						std::span<const Handle> group = span0.last(span0.size() - index - 1);
 						for (auto e : std::ranges::reverse_view(group)) {
-							if (types[e] == BoundaryType::LowerBoundary) {
+							if (HasLowerBoundary(types[e])) {
 								target = e;
+								target_boundary = BoundaryType::LowerBoundary;
 								break;
 							}
 						}
 					}
 
 					next = target;
+					next_boundary = target_boundary;
 				}
 
 				assert(tailor::npos != next);
 
-				poly.edges.push_back({ current, curr_edge_type });
+				poly.edges.push_back({ current, curr_boundary });
 
 				current = next;
+				curr_boundary = next_boundary;
+
 				next = tailor::npos;
-			} while (current != first);
+				next_boundary = BoundaryType::Unknown;
+			} while (current != first || (current == first && curr_boundary != first_boundary));
 
 			// 重置所有已处理边的类型
 			for (auto& e : poly.edges) {
-				types[e.id] = BoundaryType::Unknown;
+				assert(
+					e.type == BoundaryType::UpperBoundary ||
+					e.type == BoundaryType::LowerBoundary
+				);
+
+				if (e.type == BoundaryType::UpperBoundary) {
+					types[e.id] = RemoveUpperBoundary(types[e.id]);
+				} else {
+					types[e.id] = RemoveLowerBoundary(types[e.id]);
+				}
+			}
+		}
+
+		return polys;
+	}
+};
+
+class InnerFirstXConnectType {
+public:
+	/**
+	 * @brief	连接所有边界边为多边形
+	 * @tparam Drafting	草稿类型
+	 * @param drafting	草稿
+	 * @param types		边界类型数组
+	 * @return	多边形集合
+	 */
+	template<class Drafting>
+	std::vector<Polygon<PolyEdgeInfo>> Connect(const Drafting& drafting, std::vector<BoundaryType> types) const {
+		const auto& vertices = drafting.vertexEvents;
+		const auto& edges = drafting.edgeEvent;
+
+		std::vector<Polygon<PolyEdgeInfo>> polys;
+		for (size_t i = 0, n = edges.size(); i < n; ++i) {
+			if (!IsBoundaryX(types[i])) continue;
+
+			auto& poly = polys.emplace_back();
+
+			Handle first = i;
+			Handle current = i;
+			BoundaryType first_boundary = HasLowerBoundary(types[current]) ?
+				BoundaryType::LowerBoundary : BoundaryType::UpperBoundary;
+			BoundaryType curr_boundary = first_boundary;
+			Handle next = tailor::npos;
+			BoundaryType next_boundary = BoundaryType::Unknown;
+
+			do {
+				assert(tailor::npos != current);
+
+				auto edge_id = current;
+				const auto& edge = edges[edge_id];
+				assert(IsBoundaryX(curr_boundary));
+
+				// 必须为上边界或下边界
+				if (HasLowerBoundary(curr_boundary)) {
+					// 如果是下边界
+					// 则本条边的终点和下条边的起点是同一个顶点(所有边始终为正向)
+					auto& vertex = vertices[edge.endPntGroup];
+
+					auto span0 = vertex.endGroup.Span();
+					auto span1 = vertex.startGroup.Span();
+					auto loc = std::find(span0.begin(), span0.end(), edge_id);
+					// 不可能找不到
+					assert(loc != span0.end());
+
+					std::size_t index = std::distance(span0.begin(), loc);
+
+					Handle target = tailor::npos;
+					BoundaryType target_boundary = BoundaryType::Unknown;
+
+					// 此处顺时针找
+					{
+						std::span<const Handle> group = span0.first(index);
+						for (auto e : std::ranges::reverse_view(group)) {
+							if (HasUpperBoundary(types[e])) {
+								target = e;
+								target_boundary = BoundaryType::UpperBoundary;
+								break;
+							}
+						}
+					}
+
+					if (tailor::npos == target) {
+						// 必须反着遍历
+						for (auto e : span1) {
+							if (HasLowerBoundary(types[e])) { // 方向相同, 边界属性也相同
+								target = e;
+								target_boundary = BoundaryType::LowerBoundary;
+								break;
+							}
+						}
+					}
+
+					if (tailor::npos == target) {
+						std::span<const Handle> group = span0.last(span0.size() - index);
+						for (auto e : std::ranges::reverse_view(group)) {
+							if (HasUpperBoundary(types[e])) {
+								target = e;
+								target_boundary = BoundaryType::UpperBoundary;
+								break;
+							}
+						}
+					}
+
+					next = target;
+					next_boundary = target_boundary;
+				} else {
+					assert(HasUpperBoundary(curr_boundary));
+
+					// 如果是上边界
+					// 则本条边的起点和下条边的终点是同一个顶点(所有边始终为正向)
+					auto& vertex = vertices[edge.startPntGroup];
+
+					auto span0 = vertex.startGroup.Span();
+					auto span1 = vertex.endGroup.Span();
+					auto loc = std::find(span0.begin(), span0.end(), edge_id);
+					// 不可能找不到
+					assert(loc != span0.end());
+
+					std::size_t index = std::distance(span0.begin(), loc);
+
+					Handle target = tailor::npos;
+					BoundaryType target_boundary = BoundaryType::Unknown;
+
+					// 此处顺时针找第一个上边界
+					{
+						//std::span<const Handle> group = span0.last(span0.size() - index - 1);
+						std::span<const Handle> group = span0.last(span0.size() - index - 1);
+						for (auto e : group) {
+							if (HasLowerBoundary(types[e])) {
+								target = e;
+								target_boundary = BoundaryType::LowerBoundary;
+								break;
+							}
+						}
+					}
+
+					if (tailor::npos == target) {
+						// 必须反着遍历
+						for (auto e : std::ranges::reverse_view(span1)) {
+							if (HasUpperBoundary(types[e])) { // 方向相同, 边界属性也相同
+								target = e;
+								target_boundary = BoundaryType::UpperBoundary;
+								break;
+							}
+						}
+					}
+
+					if (tailor::npos == target) {
+						std::span<const Handle> group = span0.first(index + 1);
+						for (auto e : group) {
+							if (HasLowerBoundary(types[e])) {
+								target = e;
+								target_boundary = BoundaryType::LowerBoundary;
+								break;
+							}
+						}
+					}
+
+					next = target;
+					next_boundary = target_boundary;
+				}
+
+				assert(tailor::npos != next);
+
+				poly.edges.push_back({ current, curr_boundary });
+
+				current = next;
+				curr_boundary = next_boundary;
+
+				next = tailor::npos;
+				next_boundary = BoundaryType::Unknown;
+			} while (current != first || (current == first && curr_boundary != first_boundary));
+
+			// 重置所有已处理边的类型
+			for (auto& e : poly.edges) {
+				assert(
+					e.type == BoundaryType::UpperBoundary ||
+					e.type == BoundaryType::LowerBoundary
+				);
+
+				if (e.type == BoundaryType::UpperBoundary) {
+					types[e.id] = RemoveUpperBoundary(types[e.id]);
+				} else {
+					types[e.id] = RemoveLowerBoundary(types[e.id]);
+				}
 			}
 		}
 
@@ -901,16 +1098,36 @@ private:
 	}
 
 	template<class Drafting>
-	Handle FirstBottomEdge(const Drafting& drafting, Handle edge_id) const {
+	PolyEdgeInfo FirstBottomEdge(const Drafting& drafting, const PolyEdgeInfo& edge, const std::vector<BoundaryType>& types) const {
+		auto raw_type = types[edge.id];
+		assert(IsBoundaryX(raw_type));
 		const auto& edges = drafting.edgeEvent;
 
-		Handle first = edges[edge_id].firstBottom;
-		if (tailor::npos == first) return first; // 下方无边
+		if (raw_type == BoundaryType::OutsideConjugateBoundary) {
+			if (edge.type == BoundaryType::UpperBoundary) {
+				return { edge.id, BoundaryType::LowerBoundary };
+			}
+		} else if (raw_type == BoundaryType::InsideConjugateBoundary) {
+			if (edge.type == BoundaryType::LowerBoundary) {
+				return { edge.id, BoundaryType::UpperBoundary };
+			}
+		}
+
+		Handle first = edges[edge.id].firstBottom;
+		if (tailor::npos == first) return {}; // 下方无边
 
 		while (tailor::npos != edges[first].firstSplit) {
 			first = edges[first].firstSplit;
 		}
-		return first;
+		if (tailor::npos == first) return {}; // 下方无边
+
+		auto next_raw_type = types[first];
+		if (next_raw_type == BoundaryType::OutsideConjugateBoundary) {
+			return { first, BoundaryType::UpperBoundary };
+		} else if (next_raw_type == BoundaryType::InsideConjugateBoundary) {
+			return { first, BoundaryType::LowerBoundary };
+		}
+		return { first, next_raw_type };
 	}
 
 	/**
@@ -922,21 +1139,42 @@ private:
 	 * @return
 	 */
 	template<class Drafting>
-	Handle LowestEdge(const Drafting& drafting, const Polygon<PolyEdgeInfo>& polygon, const std::vector<BoundaryType>& types) const {
+	PolyEdgeInfo LowestEdge(const Drafting& drafting, const Polygon<PolyEdgeInfo>& polygon, const std::vector<BoundaryType>& types) const {
 		const auto& edges = drafting.edgeEvent;
 		const auto& vertices = drafting.vertexEvents;
 
-		Handle first = tailor::npos;
+		PolyEdgeInfo result{};
 		Handle vertex_id = tailor::npos;
 		for (const auto& edge_info : polygon.edges) {
 			auto cur_vertex_id = edges[edge_info.id].startPntGroup;
 			if (cur_vertex_id > vertex_id) continue;
 
 			if (cur_vertex_id == vertex_id) {
+				if (edge_info.id == result.id) {
+					// 共轭边
+					assert(
+						types[edge_info.id] == BoundaryType::InsideConjugateBoundary ||
+						types[edge_info.id] == BoundaryType::OutsideConjugateBoundary
+					);
+
+					if (types[edge_info.id] == BoundaryType::InsideConjugateBoundary) {
+						// ----->
+						// InsideConjugateBoundary 顺时针旋转
+						// <-----
+						result.type = BoundaryType::UpperBoundary;
+					} else {
+						// <-----
+						// OutsideConjugateBoundary 逆时针旋转
+						// ----->
+						result.type = BoundaryType::LowerBoundary;
+					}
+					continue;
+				}
+
 				auto span = vertices[cur_vertex_id].startGroup.Span();
 				bool no_change = false;
 				for (auto eid : span) {
-					if (eid == first) {
+					if (eid == result.id) {
 						no_change = true;
 						break;
 					}
@@ -950,13 +1188,13 @@ private:
 
 			// 更新
 			vertex_id = cur_vertex_id;
-			first = edge_info.id;
+			result = edge_info;
 		}
 
-		assert(tailor::npos != first);
+		assert(tailor::npos != result.id);
 		assert(tailor::npos != vertex_id);
 
-		return first;
+		return result;
 	}
 
 public:
@@ -993,11 +1231,16 @@ public:
 		}
 
 		static constexpr size_t invalid_group = static_cast<size_t>(-1);
+		constexpr auto CalcId = [](const PolyEdgeInfo& edge)->size_t {
+			assert(IsBoundary(edge.type));
+			return edge.id * 2 + static_cast<size_t>(edge.type == BoundaryType::LowerBoundary);
+			};
+
 		// 每组输出多边形的边对应的组
-		std::vector<size_t> groups(edges.size(), invalid_group);
+		std::vector<size_t> groups(edges.size() * 2, invalid_group);
 		for (size_t i = 0, n = polys.size(); i < n; ++i) {
 			for (auto& edge : polys[i].edges) {
-				groups[edge.id] = i;
+				groups[CalcId(edge)] = i;
 			}
 		}
 
@@ -1006,7 +1249,7 @@ public:
 			size_t brother = invalid_group; // 当 brother 为 npos 时, 规定 parent 计算完毕
 
 			bool isOuter = false;
-			Handle lowestEdge = tailor::npos;
+			PolyEdgeInfo lowestEdgeInfo{};
 		};
 
 		std::vector<GroupInfo> group_infos(polys.size());
@@ -1015,36 +1258,42 @@ public:
 		for (size_t i = 0, n = group_infos.size(); i < n; ++i) {
 			auto& group_info = group_infos[i];
 
-			group_info.lowestEdge = LowestEdge(drafting, polys[i], types2);
 			// 如果最低边是下边界, 则为外边界
-			group_info.isOuter = (BoundaryType::LowerBoundary == types2[group_info.lowestEdge]);
+			group_info.lowestEdgeInfo = LowestEdge(drafting, polys[i], types2);
+			group_info.isOuter = HasLowerBoundary(group_info.lowestEdgeInfo.type);
 		}
 
 		// 计算每组之间的关系
 		for (size_t i = 0, n = group_infos.size(); i < n; ++i) {
 			auto& group_info = group_infos[i];
 
-			Handle fbe = FirstBottomEdge(drafting, group_info.lowestEdge);
+			PolyEdgeInfo fbe = FirstBottomEdge(
+				drafting, group_info.lowestEdgeInfo, types
+			);
 
 			// 有可能找到非输出边, 直到
-			while (tailor::npos != fbe && invalid_group == groups[fbe]) {
-				fbe = FirstBottomEdge(drafting, fbe);
+			while (
+				tailor::npos != fbe.id &&                  // 下方有边
+				IsBoundary(fbe.type) &&                    // 必须为合法的边界边
+				invalid_group == groups[CalcId(fbe)]) {
+				fbe = FirstBottomEdge(drafting, fbe, types);
 			}
 
 			// 本组为独立的外边界
-			if (tailor::npos == fbe) continue;
+			if (tailor::npos == fbe.id) continue;
 
 			// 由于 flbe 已经是最低的了, 所以不会找到依旧为本组的更低的边
-			assert(i != groups[fbe]);
-			assert(invalid_group != groups[fbe]);
-			assert(IsBoundary(types2[fbe]));
+			auto group_id = groups[CalcId(fbe)];
+			assert(i != group_id);
+			assert(invalid_group != group_id);
+			assert(IsBoundaryX(types2[fbe.id]));
 
-			if (group_infos[groups[fbe]].isOuter == group_info.isOuter) {
-				// i 和 groups[fbe] 同级
-				group_info.brother = groups[fbe];
+			if (group_infos[group_id].isOuter == group_info.isOuter) {
+				// i 和 group_id 同级
+				group_info.brother = group_id;
 			} else {
-				// i 是 groups[fbe] 下级
-				group_info.parent = groups[fbe];
+				// i 是 group_id 下级
+				group_info.parent = group_id;
 			}
 		}
 		// 计算每组的父节点
