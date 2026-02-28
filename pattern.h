@@ -310,7 +310,43 @@ public:
 
 class UnionXOperation {
 	using enum BoundaryType;
-
+	// | A                       | B                       | Result                  | Or                     |
+	// | Inside                  | Inside                  | Inside                  |                        |
+	// | Inside                  | Outside                 | Inside                  |                        |
+	// | Inside                  | UpperBoundary           | Inside                  |                        |
+	// | Inside                  | LowerBoundary           | Inside                  |                        |
+	// | Inside                  | InsideConjugateBoundary | Inside                  |                        |
+	// | Inside                  | OutsideConjugateBoundary| Inside                  |                        |
+	// | Outside                 | Inside                  | Inside                  |                        |
+	// | Outside                 | Outside                 | Outside                 |                        |
+	// | Outside                 | UpperBoundary           | UpperBoundary           |                        |
+	// | Outside                 | LowerBoundary           | LowerBoundary           |                        |
+	// | Outside                 | InsideConjugateBoundary | InsideConjugateBoundary |                        |
+	// | Outside                 | OutsideConjugateBoundary| OutsideConjugateBoundary|                        |
+	// | UpperBoundary           | Inside                  | Inside                  |                        |
+	// | UpperBoundary           | Outside                 | UpperBoundary           |                        |
+	// | UpperBoundary           | UpperBoundary           | UpperBoundary           |                        |
+	// | UpperBoundary           | LowerBoundary           | Inside                  | InsideConjugateBoundary|
+	// | UpperBoundary           | InsideConjugateBoundary | InsideConjugateBoundary | Inside                 | 
+	// | UpperBoundary           | OutsideConjugateBoundary| UpperBoundary           |                        |
+	// | LowerBoundary           | Inside                  | Inside                  |                        |
+	// | LowerBoundary           | Outside                 | LowerBoundary           |                        |
+	// | LowerBoundary           | UpperBoundary           | Inside                  | InsideConjugateBoundary|
+	// | LowerBoundary           | LowerBoundary           | LowerBoundary           |                        |
+	// | LowerBoundary           | InsideConjugateBoundary | InsideConjugateBoundary | Inside                 |
+	// | LowerBoundary           | OutsideConjugateBoundary| LowerBoundary           |                        |
+	// | InsideConjugateBoundary | Inside                  | Inside                  |                        |
+	// | InsideConjugateBoundary | Outside                 | InsideConjugateBoundary |                        |
+	// | InsideConjugateBoundary | UpperBoundary           | InsideConjugateBoundary | Inside                 |
+	// | InsideConjugateBoundary | LowerBoundary           | InsideConjugateBoundary | Inside                 |
+	// | InsideConjugateBoundary | InsideConjugateBoundary | InsideConjugateBoundary |                        |
+	// | InsideConjugateBoundary | OutsideConjugateBoundary| Inside                  |                        |
+	// | OutsideConjugateBoundary| Inside                  | Inside                  |                        |
+	// | OutsideConjugateBoundary| Outside                 | OutsideConjugateBoundary|                        |
+	// | OutsideConjugateBoundary| UpperBoundary           | UpperBoundary           |                        |
+	// | OutsideConjugateBoundary| LowerBoundary           | LowerBoundary           |                        |
+	// | OutsideConjugateBoundary| InsideConjugateBoundary | Inside                  |                        |
+	// | OutsideConjugateBoundary| OutsideConjugateBoundary| OutsideConjugateBoundary|                        |
 	static constexpr std::array<BoundaryType, 36> unionMap{
 		Inside,Inside,Inside,Inside,Inside,Inside,
 		Inside,Outside,UpperBoundary,LowerBoundary,InsideConjugateBoundary,OutsideConjugateBoundary,
