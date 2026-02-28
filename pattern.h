@@ -32,40 +32,40 @@ enum class BoundaryType :short {
 };
 
 namespace {
-inline bool IsBoundary(BoundaryType type) {
-	return type == BoundaryType::UpperBoundary
-		|| type == BoundaryType::LowerBoundary;
-}
-inline bool IsBoundaryX(BoundaryType type) {
-	return type == BoundaryType::UpperBoundary
-		|| type == BoundaryType::LowerBoundary
-		|| type == BoundaryType::InsideConjugateBoundary
-		|| type == BoundaryType::OutsideConjugateBoundary;
-	//return (static_cast<int>(type) & 0b0011) != 0;
-}
-constexpr BoundaryType RemoveUpperBoundary(BoundaryType type) {
-	return static_cast<BoundaryType>(static_cast<int>(type) &
-		static_cast<int>(BoundaryType::LowerBoundary));
-}
+	inline bool IsBoundary(BoundaryType type) {
+		return type == BoundaryType::UpperBoundary
+			|| type == BoundaryType::LowerBoundary;
+	}
+	inline bool IsBoundaryX(BoundaryType type) {
+		return type == BoundaryType::UpperBoundary
+			|| type == BoundaryType::LowerBoundary
+			|| type == BoundaryType::InsideConjugateBoundary
+			|| type == BoundaryType::OutsideConjugateBoundary;
+		//return (static_cast<int>(type) & 0b0011) != 0;
+	}
+	constexpr BoundaryType RemoveUpperBoundary(BoundaryType type) {
+		return static_cast<BoundaryType>(static_cast<int>(type) &
+			static_cast<int>(BoundaryType::LowerBoundary));
+	}
 
-constexpr BoundaryType RemoveLowerBoundary(BoundaryType type) {
-	return static_cast<BoundaryType>(static_cast<int>(type) &
-		static_cast<int>(BoundaryType::UpperBoundary));
-}
+	constexpr BoundaryType RemoveLowerBoundary(BoundaryType type) {
+		return static_cast<BoundaryType>(static_cast<int>(type) &
+			static_cast<int>(BoundaryType::UpperBoundary));
+	}
 
-constexpr bool HasLowerBoundary(BoundaryType type) {
-	return (static_cast<int>(type) & static_cast<int>(BoundaryType::LowerBoundary)) != 0;
-}
-constexpr bool HasUpperBoundary(BoundaryType type) {
-	return (static_cast<int>(type) & static_cast<int>(BoundaryType::UpperBoundary)) != 0;
-}
+	constexpr bool HasLowerBoundary(BoundaryType type) {
+		return (static_cast<int>(type) & static_cast<int>(BoundaryType::LowerBoundary)) != 0;
+	}
+	constexpr bool HasUpperBoundary(BoundaryType type) {
+		return (static_cast<int>(type) & static_cast<int>(BoundaryType::UpperBoundary)) != 0;
+	}
 
-inline BoundaryType ReverseBoundary(BoundaryType type) {
-	assert(IsBoundary(type));
-	return (type == BoundaryType::UpperBoundary) ?
-		BoundaryType::LowerBoundary :
-		BoundaryType::UpperBoundary;
-}
+	inline BoundaryType ReverseBoundary(BoundaryType type) {
+		assert(IsBoundary(type));
+		return (type == BoundaryType::UpperBoundary) ?
+			BoundaryType::LowerBoundary :
+			BoundaryType::UpperBoundary;
+	}
 }
 
 // 等于指定环绕数
@@ -1260,6 +1260,7 @@ public:
 
 			// 如果最低边是下边界, 则为外边界
 			group_info.lowestEdgeInfo = LowestEdge(drafting, polys[i], types2);
+			assert(IsBoundary(group_info.lowestEdgeInfo.type));
 			group_info.isOuter = HasLowerBoundary(group_info.lowestEdgeInfo.type);
 		}
 
@@ -1280,7 +1281,7 @@ public:
 			}
 
 			// 本组为独立的外边界
-			if (tailor::npos == fbe.id) continue;
+			if (tailor::npos == fbe.id || !IsBoundary(fbe.type)) continue;
 
 			// 由于 flbe 已经是最低的了, 所以不会找到依旧为本组的更低的边
 			auto group_id = groups[CalcId(fbe)];
