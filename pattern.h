@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "tailor_concept.h"
 #include <assert.h>
+#include <array>
 #include <vector>
 #include <ranges>
 
@@ -310,43 +311,43 @@ public:
 
 class UnionXOperation {
 	using enum BoundaryType;
-	// | A                       | B                       | Result                  | Or                     |
-	// | Inside                  | Inside                  | Inside                  |                        |
-	// | Inside                  | Outside                 | Inside                  |                        |
-	// | Inside                  | UpperBoundary           | Inside                  |                        |
-	// | Inside                  | LowerBoundary           | Inside                  |                        |
-	// | Inside                  | InsideConjugateBoundary | Inside                  |                        |
-	// | Inside                  | OutsideConjugateBoundary| Inside                  |                        |
-	// | Outside                 | Inside                  | Inside                  |                        |
-	// | Outside                 | Outside                 | Outside                 |                        |
-	// | Outside                 | UpperBoundary           | UpperBoundary           |                        |
-	// | Outside                 | LowerBoundary           | LowerBoundary           |                        |
-	// | Outside                 | InsideConjugateBoundary | InsideConjugateBoundary |                        |
-	// | Outside                 | OutsideConjugateBoundary| OutsideConjugateBoundary|                        |
-	// | UpperBoundary           | Inside                  | Inside                  |                        |
-	// | UpperBoundary           | Outside                 | UpperBoundary           |                        |
-	// | UpperBoundary           | UpperBoundary           | UpperBoundary           |                        |
-	// | UpperBoundary           | LowerBoundary           | Inside                  | InsideConjugateBoundary|
-	// | UpperBoundary           | InsideConjugateBoundary | InsideConjugateBoundary | Inside                 | 
-	// | UpperBoundary           | OutsideConjugateBoundary| UpperBoundary           |                        |
-	// | LowerBoundary           | Inside                  | Inside                  |                        |
-	// | LowerBoundary           | Outside                 | LowerBoundary           |                        |
-	// | LowerBoundary           | UpperBoundary           | Inside                  | InsideConjugateBoundary|
-	// | LowerBoundary           | LowerBoundary           | LowerBoundary           |                        |
-	// | LowerBoundary           | InsideConjugateBoundary | InsideConjugateBoundary | Inside                 |
-	// | LowerBoundary           | OutsideConjugateBoundary| LowerBoundary           |                        |
-	// | InsideConjugateBoundary | Inside                  | Inside                  |                        |
-	// | InsideConjugateBoundary | Outside                 | InsideConjugateBoundary |                        |
-	// | InsideConjugateBoundary | UpperBoundary           | InsideConjugateBoundary | Inside                 |
-	// | InsideConjugateBoundary | LowerBoundary           | InsideConjugateBoundary | Inside                 |
-	// | InsideConjugateBoundary | InsideConjugateBoundary | InsideConjugateBoundary |                        |
-	// | InsideConjugateBoundary | OutsideConjugateBoundary| Inside                  |                        |
-	// | OutsideConjugateBoundary| Inside                  | Inside                  |                        |
-	// | OutsideConjugateBoundary| Outside                 | OutsideConjugateBoundary|                        |
-	// | OutsideConjugateBoundary| UpperBoundary           | UpperBoundary           |                        |
-	// | OutsideConjugateBoundary| LowerBoundary           | LowerBoundary           |                        |
-	// | OutsideConjugateBoundary| InsideConjugateBoundary | Inside                  |                        |
-	// | OutsideConjugateBoundary| OutsideConjugateBoundary| OutsideConjugateBoundary|                        |
+	// | A                       | B                       | Result                  | Or                      |
+	// | Inside                  | Inside                  | Inside                  |                         |
+	// | Inside                  | Outside                 | Inside                  |                         |
+	// | Inside                  | UpperBoundary           | Inside                  |                         |
+	// | Inside                  | LowerBoundary           | Inside                  |                         |
+	// | Inside                  | InsideConjugateBoundary | Inside                  |                         |
+	// | Inside                  | OutsideConjugateBoundary| Inside                  |                         |
+	// | Outside                 | Inside                  | Inside                  |                         |
+	// | Outside                 | Outside                 | Outside                 |                         |
+	// | Outside                 | UpperBoundary           | UpperBoundary           |                         |
+	// | Outside                 | LowerBoundary           | LowerBoundary           |                         |
+	// | Outside                 | InsideConjugateBoundary | InsideConjugateBoundary |                         |
+	// | Outside                 | OutsideConjugateBoundary| OutsideConjugateBoundary|                         |
+	// | UpperBoundary           | Inside                  | Inside                  |                         |
+	// | UpperBoundary           | Outside                 | UpperBoundary           |                         |
+	// | UpperBoundary           | UpperBoundary           | UpperBoundary           |                         |
+	// | UpperBoundary           | LowerBoundary           | Inside                  | InsideConjugateBoundary |
+	// | UpperBoundary           | InsideConjugateBoundary | InsideConjugateBoundary | Inside                  | 
+	// | UpperBoundary           | OutsideConjugateBoundary| UpperBoundary           |                         |
+	// | LowerBoundary           | Inside                  | Inside                  |                         |
+	// | LowerBoundary           | Outside                 | LowerBoundary           |                         |
+	// | LowerBoundary           | UpperBoundary           | Inside                  | InsideConjugateBoundary |
+	// | LowerBoundary           | LowerBoundary           | LowerBoundary           |                         |
+	// | LowerBoundary           | InsideConjugateBoundary | InsideConjugateBoundary | Inside                  |
+	// | LowerBoundary           | OutsideConjugateBoundary| LowerBoundary           |                         |
+	// | InsideConjugateBoundary | Inside                  | Inside                  |                         |
+	// | InsideConjugateBoundary | Outside                 | InsideConjugateBoundary |                         |
+	// | InsideConjugateBoundary | UpperBoundary           | InsideConjugateBoundary | Inside                  |
+	// | InsideConjugateBoundary | LowerBoundary           | InsideConjugateBoundary | Inside                  |
+	// | InsideConjugateBoundary | InsideConjugateBoundary | InsideConjugateBoundary |                         |
+	// | InsideConjugateBoundary | OutsideConjugateBoundary| Inside                  |                         |
+	// | OutsideConjugateBoundary| Inside                  | Inside                  |                         |
+	// | OutsideConjugateBoundary| Outside                 | OutsideConjugateBoundary|                         |
+	// | OutsideConjugateBoundary| UpperBoundary           | UpperBoundary           |                         |
+	// | OutsideConjugateBoundary| LowerBoundary           | LowerBoundary           |                         |
+	// | OutsideConjugateBoundary| InsideConjugateBoundary | Inside                  |                         |
+	// | OutsideConjugateBoundary| OutsideConjugateBoundary| OutsideConjugateBoundary|                         |
 	static constexpr std::array<BoundaryType, 36> unionMap{
 		Inside,Inside,Inside,Inside,Inside,Inside,
 		Inside,Outside,UpperBoundary,LowerBoundary,InsideConjugateBoundary,OutsideConjugateBoundary,
@@ -384,6 +385,61 @@ public:
 	}
 };
 
+class DifferenceXOperation {
+	using enum BoundaryType;
+	// | A                       | B                       | Result                  | Or                      |
+	// | Inside                  | Inside                  | Outside                 |                         |
+	// | Inside                  | Outside                 | Inside                  |                         |
+	// | Inside                  | UpperBoundary           | LowerBoundary           |                         |
+	// | Inside                  | LowerBoundary           | UpperBoundary           |                         |
+	// | Inside                  | InsideConjugateBoundary | OutsideConjugateBoundary| Outside                 |
+	// | Inside                  | OutsideConjugateBoundary| InsideConjugateBoundary | Inside                  |
+	// | Outside                 | Inside                  | Outside                 |                         |
+	// | Outside                 | Outside                 | Outside                 |                         |
+	// | Outside                 | UpperBoundary           | Outside                 |                         |
+	// | Outside                 | LowerBoundary           | Outside                 |                         |
+	// | Outside                 | InsideConjugateBoundary | Outside                 |                         |
+	// | Outside                 | OutsideConjugateBoundary| Outside                 |                         |
+	// | UpperBoundary           | Inside                  | Outside                 |                         |
+	// | UpperBoundary           | Outside                 | UpperBoundary           |                         |
+	// | UpperBoundary           | UpperBoundary           | Outside                 | OutsideConjugateBoundary|
+	// | UpperBoundary           | LowerBoundary           | UpperBoundary           |                         |
+	// | UpperBoundary           | InsideConjugateBoundary | OutsideConjugateBoundary| Outside                 |
+	// | UpperBoundary           | OutsideConjugateBoundary| UpperBoundary           |                         |
+	// | LowerBoundary           | Inside                  | Outside                 |                         |
+	// | LowerBoundary           | Outside                 | LowerBoundary           |                         |
+	// | LowerBoundary           | UpperBoundary           | LowerBoundary           |                         |
+	// | LowerBoundary           | LowerBoundary           | Outside                 | OutsideConjugateBoundary|
+	// | LowerBoundary           | InsideConjugateBoundary | OutsideConjugateBoundary| Outside                 |
+	// | LowerBoundary           | OutsideConjugateBoundary| LowerBoundary           |                         |
+	// | InsideConjugateBoundary | Inside                  | Outside                 |                         |
+	// | InsideConjugateBoundary | Outside                 | InsideConjugateBoundary |                         |
+	// | InsideConjugateBoundary | UpperBoundary           | LowerBoundary           |                         |
+	// | InsideConjugateBoundary | LowerBoundary           | UpperBoundary           |                         |
+	// | InsideConjugateBoundary | InsideConjugateBoundary | Outside                 |                         |
+	// | InsideConjugateBoundary | OutsideConjugateBoundary| Outside                 |                         |
+	// | OutsideConjugateBoundary| Inside                  | Outside                 |                         |
+	// | OutsideConjugateBoundary| Outside                 | OutsideConjugateBoundary|                         |
+	// | OutsideConjugateBoundary| UpperBoundary           | OutsideConjugateBoundary| Outside                 |
+	// | OutsideConjugateBoundary| LowerBoundary           | OutsideConjugateBoundary| Outside                 |
+	// | OutsideConjugateBoundary| InsideConjugateBoundary | OutsideConjugateBoundary|                         |
+	// | OutsideConjugateBoundary| OutsideConjugateBoundary| Outside                 |                         |
+	static constexpr std::array<BoundaryType, 36> differenceMap{
+		Outside,Inside,LowerBoundary,UpperBoundary,OutsideConjugateBoundary,InsideConjugateBoundary,
+		Outside,Outside,Outside,Outside,Outside,Outside,
+		Outside,UpperBoundary,Outside,UpperBoundary,OutsideConjugateBoundary,UpperBoundary,
+		Outside,LowerBoundary,LowerBoundary,Outside,OutsideConjugateBoundary,LowerBoundary,
+		Outside,InsideConjugateBoundary,LowerBoundary,UpperBoundary,Outside,Outside,
+		Outside,OutsideConjugateBoundary,OutsideConjugateBoundary,OutsideConjugateBoundary,OutsideConjugateBoundary,Outside,
+	};
+public:
+	BoundaryType operator()(BoundaryType subject_status, BoundaryType clipper_status) const {
+		return differenceMap[
+			BoundaryTypeIndexMap::Index(subject_status) * 6 + BoundaryTypeIndexMap::Index(clipper_status)
+		];
+	}
+};
+
 /**
  * @brief 反向差集 clipper - subject
  */
@@ -411,6 +467,61 @@ public:
 	}
 };
 
+class SymmetricXDifferenceOperation {
+	using enum BoundaryType;
+	// | A                       | B                       | Result                  | Or                      |
+	// | Inside                  | Inside                  | Outside                 |                         |
+	// | Inside                  | Outside                 | Inside                  |                         |
+	// | Inside                  | UpperBoundary           | LowerBoundary           |                         |
+	// | Inside                  | LowerBoundary           | UpperBoundary           |                         |
+	// | Inside                  | InsideConjugateBoundary | OutsideConjugateBoundary|                         |
+	// | Inside                  | OutsideConjugateBoundary| InsideConjugateBoundary |                         |
+	// | Outside                 | Inside                  | Inside                  |                         |
+	// | Outside                 | Outside                 | Outside                 |                         |
+	// | Outside                 | UpperBoundary           | UpperBoundary           |                         |
+	// | Outside                 | LowerBoundary           | LowerBoundary           |                         |
+	// | Outside                 | InsideConjugateBoundary | InsideConjugateBoundary |                         |
+	// | Outside                 | OutsideConjugateBoundary| OutsideConjugateBoundary|                         |
+	// | UpperBoundary           | Inside                  | LowerBoundary           |                         |
+	// | UpperBoundary           | Outside                 | UpperBoundary           |                         |
+	// | UpperBoundary           | UpperBoundary           | Outside                 | OutsideConjugateBoundary|
+	// | UpperBoundary           | LowerBoundary           | Inside                  | InsideConjugateBoundary |
+	// | UpperBoundary           | InsideConjugateBoundary | LowerBoundary           |                         |
+	// | UpperBoundary           | OutsideConjugateBoundary| UpperBoundary           |                         |
+	// | LowerBoundary           | Inside                  | UpperBoundary           |                         |
+	// | LowerBoundary           | Outside                 | LowerBoundary           |                         |
+	// | LowerBoundary           | UpperBoundary           | Inside                  | InsideConjugateBoundary |
+	// | LowerBoundary           | LowerBoundary           | Outside                 | OutsideConjugateBoundary|
+	// | LowerBoundary           | InsideConjugateBoundary | UpperBoundary           |                         |
+	// | LowerBoundary           | OutsideConjugateBoundary| LowerBoundary           |                         |
+	// | InsideConjugateBoundary | Inside                  | OutsideConjugateBoundary|                         |
+	// | InsideConjugateBoundary | Outside                 | InsideConjugateBoundary |                         |
+	// | InsideConjugateBoundary | UpperBoundary           | LowerBoundary           |                         |
+	// | InsideConjugateBoundary | LowerBoundary           | UpperBoundary           |                         |
+	// | InsideConjugateBoundary | InsideConjugateBoundary | Outside                 |                         |
+	// | InsideConjugateBoundary | OutsideConjugateBoundary| Inside                  |                         |
+	// | OutsideConjugateBoundary| Inside                  | InsideConjugateBoundary |                         |
+	// | OutsideConjugateBoundary| Outside                 | OutsideConjugateBoundary|                         |
+	// | OutsideConjugateBoundary| UpperBoundary           | UpperBoundary           |                         |
+	// | OutsideConjugateBoundary| LowerBoundary           | LowerBoundary           |                         |
+	// | OutsideConjugateBoundary| InsideConjugateBoundary | Inside                  |                         |
+	// | OutsideConjugateBoundary| OutsideConjugateBoundary| Outside                 |                         |
+	static constexpr std::array<BoundaryType, 36> symmetricXDiffMap{
+		Outside,Inside,LowerBoundary,UpperBoundary,OutsideConjugateBoundary,InsideConjugateBoundary,
+		Inside,Outside,UpperBoundary,LowerBoundary,InsideConjugateBoundary,OutsideConjugateBoundary,
+		LowerBoundary,UpperBoundary,Outside,Inside,LowerBoundary,UpperBoundary,
+		UpperBoundary,LowerBoundary,Inside,Outside,UpperBoundary,LowerBoundary,
+		OutsideConjugateBoundary,InsideConjugateBoundary,LowerBoundary,UpperBoundary,Outside,Inside,
+		InsideConjugateBoundary,OutsideConjugateBoundary,UpperBoundary,LowerBoundary,Inside,Outside,
+	};
+public:
+	BoundaryType operator()(BoundaryType subject_status, BoundaryType clipper_status) const {
+		return symmetricXDiffMap[
+			BoundaryTypeIndexMap::Index(subject_status) * 6 + BoundaryTypeIndexMap::Index(clipper_status)
+		];
+	}
+};
+
 /**
  * @brief 交集 subject & clipper
  */
@@ -428,6 +539,62 @@ public:
 				|| clipper_status == BoundaryType::Outside) ?
 				BoundaryType::Outside : BoundaryType::Inside;
 		}
+	}
+};
+
+class IntersectionXOperation {
+	using enum BoundaryType;
+	// | A                       | B                       | Result                  | Or                      |
+	// | Inside                  | Inside                  | Inside                  |                         |
+	// | Inside                  | Outside                 | Outside                 |                         |
+	// | Inside                  | UpperBoundary           | UpperBoundary           |                         |
+	// | Inside                  | LowerBoundary           | LowerBoundary           |                         |
+	// | Inside                  | InsideConjugateBoundary | InsideConjugateBoundary |                         |
+	// | Inside                  | OutsideConjugateBoundary| OutsideConjugateBoundary|                         |
+	// | Outside                 | Inside                  | Outside                 |                         |
+	// | Outside                 | Outside                 | Outside                 |                         |
+	// | Outside                 | UpperBoundary           | Outside                 |                         |
+	// | Outside                 | LowerBoundary           | Outside                 |                         |
+	// | Outside                 | InsideConjugateBoundary | Outside                 |                         |
+	// | Outside                 | OutsideConjugateBoundary| Outside                 |                         |
+	// | UpperBoundary           | Inside                  | UpperBoundary           |                         |
+	// | UpperBoundary           | Outside                 | Outside                 |                         |
+	// | UpperBoundary           | UpperBoundary           | UpperBoundary           |                         |
+	// | UpperBoundary           | LowerBoundary           | LowerBoundary           | OutsideConjugateBoundary|
+	// | UpperBoundary           | InsideConjugateBoundary | UpperBoundary           |                         |
+	// | UpperBoundary           | OutsideConjugateBoundary| OutsideConjugateBoundary| Outside                 |
+	// | LowerBoundary           | Inside                  | LowerBoundary           |                         |
+	// | LowerBoundary           | Outside                 | Outside                 |                         |
+	// | LowerBoundary           | UpperBoundary           | Outside                 | OutsideConjugateBoundary|
+	// | LowerBoundary           | LowerBoundary           | LowerBoundary           |                         |
+	// | LowerBoundary           | InsideConjugateBoundary | LowerBoundary           |                         |
+	// | LowerBoundary           | OutsideConjugateBoundary| OutsideConjugateBoundary| Outside                 |
+	// | InsideConjugateBoundary | Inside                  | InsideConjugateBoundary |                         |
+	// | InsideConjugateBoundary | Outside                 | Outside                 |                         |
+	// | InsideConjugateBoundary | UpperBoundary           | UpperBoundary           |                         |
+	// | InsideConjugateBoundary | LowerBoundary           | LowerBoundary           |                         |
+	// | InsideConjugateBoundary | InsideConjugateBoundary | Outside                 |                         |
+	// | InsideConjugateBoundary | OutsideConjugateBoundary| Outside                 |                         |
+	// | OutsideConjugateBoundary| Inside                  | OutsideConjugateBoundary|                         |
+	// | OutsideConjugateBoundary| Outside                 | Outside                 |                         |
+	// | OutsideConjugateBoundary| UpperBoundary           | OutsideConjugateBoundary| Outside                 |
+	// | OutsideConjugateBoundary| LowerBoundary           | OutsideConjugateBoundary| Outside                 |
+	// | OutsideConjugateBoundary| InsideConjugateBoundary | Outside                 |                         |
+	// | OutsideConjugateBoundary| OutsideConjugateBoundary| OutsideConjugateBoundary|                         |
+	static constexpr std::array<BoundaryType, 36> intersectionMap{
+		Inside,Outside,UpperBoundary,LowerBoundary,InsideConjugateBoundary,OutsideConjugateBoundary,
+		Outside,Outside,Outside,Outside,Outside,Outside,
+		UpperBoundary,Outside,UpperBoundary,LowerBoundary,UpperBoundary,OutsideConjugateBoundary,
+		LowerBoundary,Outside,Outside,LowerBoundary,LowerBoundary,OutsideConjugateBoundary,
+		InsideConjugateBoundary,Outside,UpperBoundary,LowerBoundary,Outside,Outside,
+		OutsideConjugateBoundary,Outside,OutsideConjugateBoundary,OutsideConjugateBoundary,Outside,OutsideConjugateBoundary,
+	};
+public:
+	BoundaryType operator()(BoundaryType subject_status, BoundaryType clipper_status) const {
+		// 还是打表快 XD
+		return intersectionMap[
+			BoundaryTypeIndexMap::Index(subject_status) * 6 + BoundaryTypeIndexMap::Index(clipper_status)
+		];
 	}
 };
 
@@ -1413,8 +1580,11 @@ OrdinaryBoolOperationPattern<\
 }\
 };
 
-SIMPLE_PATTERN_DEF(Union)
 SIMPLE_PATTERN_DEF(UnionX)
+SIMPLE_PATTERN_DEF(DifferenceX)
+SIMPLE_PATTERN_DEF(IntersectionX)
+SIMPLE_PATTERN_DEF(SymmetricXDifference)
+SIMPLE_PATTERN_DEF(Union)
 SIMPLE_PATTERN_DEF(Difference)
 SIMPLE_PATTERN_DEF(Intersection)
 SIMPLE_PATTERN_DEF(ReverseDifference)
