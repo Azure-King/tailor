@@ -1477,9 +1477,9 @@ public:
 
 			// 有可能找到非输出边, 直到
 			while (
-				tailor::npos != fbe.id &&                  // 下方有边
-				IsBoundary(fbe.type) &&                    // 必须为合法的边界边
-				invalid_group == groups[CalcId(fbe)]) {
+				tailor::npos != fbe.id &&                  	 // 下方有边
+				(!IsBoundary(fbe.type) ||                    // 必须为合法的边界边
+				invalid_group == groups[CalcId(fbe)])) {
 				fbe = FirstBottomEdge(drafting, fbe, types);
 			}
 
