@@ -1303,7 +1303,6 @@ private:
 	template<class Drafting>
 	PolyEdgeInfo FirstBottomEdge(const Drafting& drafting, const PolyEdgeInfo& edge, const std::vector<BoundaryType>& types) const {
 		auto raw_type = types[edge.id];
-		assert(IsBoundaryX(raw_type));
 		const auto& edges = drafting.edgeEvent;
 
 		if (raw_type == BoundaryType::OutsideConjugateBoundary) {
