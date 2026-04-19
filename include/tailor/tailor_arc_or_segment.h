@@ -346,7 +346,7 @@ public:
 template<class ArcType, class Core>
 class ArcAnalysis {
 public:
-	using PointType = Point<double>;
+	using PointType = typename ArcType::PointType;
 	using CoordinateType = typename PointTraits<PointType>::CoordinateType;
 	using CurveType = ArcType;
 

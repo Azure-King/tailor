@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+#include "tailor_concept.h"
+
 namespace tailor {
 template<typename T>
 struct Point {
@@ -33,7 +35,7 @@ struct PointTraits {
 template <typename PointType>
 class PointUtils {
 public:
-	using CoordinateType = typename PointType::CoordinateType;
+	using CoordinateType = typename PointTraits<PointType>::CoordinateType;
 
 	PointUtils() = default;
 
