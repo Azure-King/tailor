@@ -147,10 +147,17 @@ public:
 		std::vector<VertexEvent>& start_events = cache;
 		start_events.clear();
 
+		// 将起点事件集按顺序排列
 		for (const auto& ve : start_events2) {
 			InsertVertexEvent(start_events, ve);
 		}
 
+		// 1. 在排序前识别所有的聚合边, 并替换对应事件
+		// 2. 排序事件, 优先处理相对位置在下方的边
+		// 3. 将事件放在活跃边中合适的位置, 求出上下交点(或重合边), 并选取合适的点, 分裂事件边
+
+		// 此处处理一个特殊情况: 起点在某一个活跃边的上
+		// 理论上, 此时终点事件集应当为空, 否则先前已经将该边裂解了
 		if (!end_events.empty() || start_events.empty()) {
 			std::swap(start_events, start_events2);
 			return;
@@ -162,20 +169,32 @@ public:
 
 			decltype(auto) result = ea.SplitEdge(GetEdgeEvent(it->e).edge, p);
 
+			// 该分支处理 EdgeRelativePosition 无效的情况, 因为所有起点事件的位置相同,
+			// 所以该情况在本函数中应该仅会存在最多一次, 且仅需测试一次
+
 			assert(result.HasPiece(AI));
 			assert(result.HasPiece(IB));
 
+			// 裂解 it 指向的边
 			auto split_result = SplitEvent(it->e,
 				result.GetPiece(AI),
 				result.GetPiece(IB)
 			);
 
+			// 将 it 指向的起始点事件替换为 AI 的起始点事件
 			*it = MakeStartVertexEvent(split_result.aiEvent.id);
 
+			// 终点事件集中加入 AI 的终点事件, 以便后续将其从活跃边中移除
 			end_events.emplace_back(MakeEndVertexEvent(split_result.aiEvent.id));
 
+			// 队列中加入 IB 的终点事件
+			//veq.Push(MakeEndVertexEvent(split_result.ibEvent.id));
+
+			// 插入事件最后执行, 防止引用失效
+			// 将 it 对应的起点事件替换为 IB 的起点事件
 			InsertVertexEvent(start_events, MakeStartVertexEvent(split_result.ibEvent.id));
 
+			// 理论上, 活跃边中至多仅可能存在一条边出现此情况
 			break;
 		}
 
@@ -183,11 +202,14 @@ public:
 	}
 
 	void AcceptSameLocStartEvents(std::vector<VertexEvent>& start_events, TopoVertex& vertex) {
+		// 此时起点事件已经排序完毕
 		for (const auto& ve : start_events) {
+			// 此时插入的边可能后续会被废弃, 但是在结束事件时, 会通过溯源机制, 换回正确的 id
 			vertex.startGroup.Insert(ve.e);
 			GetEdgeEvent(ve.e).startPntGroup = vertex.id;
 		}
 
+		// 二分插入
 		auto events_begin = events.begin();
 		auto events_end = events.end();
 		for (auto& cur : start_events) {
@@ -196,13 +218,17 @@ public:
 
 			auto it = events.begin();
 			while (begin < end) {
+				// middle
 				it = begin + std::distance(begin, end) / 2;
 
 				auto res = ea.CalcateEdgeRelativePosition(
 					GetEdgeEvent(it->e).edge,
-					GetEdgeEvent(cur.e).edge,
+					GetEdgeEvent(cur.e).edge, // 新边必须放在后面
 					OnlyFocusOnRelativePositionWithoutCoincidence{}
 				);
+
+				// 上方已经处理了 CI 不存在的情况, 此处应该不会再出现
+				//assert(res.HasPiece(CI));
 
 				if (CurveRelativePositionType::Upward == res.RelativePositionType()) {
 					begin = it + 1;
@@ -237,6 +263,7 @@ public:
 			if (!lower_intersection && !upper_intersection) {
 				GroupWindResult{} >> GetEdgeEvent(cur.e);
 
+				// 活跃边为空
 				events_begin = events.insert(it, cur);
 				events_end = events_begin + 1;
 
@@ -261,6 +288,7 @@ public:
 					events_end = events_begin + 1;
 
 					if (events.cbegin() != new_loc) {
+						// 如果新加入的活跃边下方有别的活跃边, 则需要记录下方第一条边
 						GetEdgeEvent(new_loc->e).firstBottom = (new_loc - 1)->e;
 					}
 					continue;
