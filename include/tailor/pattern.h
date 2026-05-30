@@ -14,8 +14,8 @@ struct EdgeFillStatus {
 };
 
 struct EdgeGroupFillStatus {
-	EdgeFillStatus subject;
-	EdgeFillStatus clipper;
+	EdgeFillStatus polygonSetA;
+	EdgeFillStatus polygonSetB;
 };
 
 enum class BoundaryType :short {
@@ -295,7 +295,7 @@ public:
 };
 
 /**
- * @brief 并集 subject | clipper
+ * @brief 并集 polygonSetA | polygonSetB
  */
 class UnionOperation {
 	using enum BoundaryType;
@@ -345,16 +345,16 @@ class UnionOperation {
 		Inside,OutsideConjugateBoundary,UpperBoundary,LowerBoundary,Inside,OutsideConjugateBoundary,
 	};
 public:
-	BoundaryType operator()(BoundaryType subject_status, BoundaryType clipper_status) const {
+	BoundaryType operator()(BoundaryType polygon_set_a_status, BoundaryType polygon_set_b_status) const {
 		// 还是打表快 XD
 		return unionMap[
-			BoundaryTypeIndexMap::Index(subject_status) * 6 + BoundaryTypeIndexMap::Index(clipper_status)
+			BoundaryTypeIndexMap::Index(polygon_set_a_status) * 6 + BoundaryTypeIndexMap::Index(polygon_set_b_status)
 		];
 	}
 };
 
 /**
- * @brief 差集 subject - clipper
+ * @brief 差集 polygonSetA - polygonSetB
  */
 class DifferenceOperation {
 	using enum BoundaryType;
@@ -404,25 +404,25 @@ class DifferenceOperation {
 		Outside,OutsideConjugateBoundary,OutsideConjugateBoundary,OutsideConjugateBoundary,OutsideConjugateBoundary,Outside,
 	};
 public:
-	BoundaryType operator()(BoundaryType subject_status, BoundaryType clipper_status) const {
+	BoundaryType operator()(BoundaryType polygon_set_a_status, BoundaryType polygon_set_b_status) const {
 		return differenceMap[
-			BoundaryTypeIndexMap::Index(subject_status) * 6 + BoundaryTypeIndexMap::Index(clipper_status)
+			BoundaryTypeIndexMap::Index(polygon_set_a_status) * 6 + BoundaryTypeIndexMap::Index(polygon_set_b_status)
 		];
 	}
 };
 
 /**
- * @brief 反向差集 clipper - subject
+ * @brief 反向差集 polygonSetB - polygonSetA
  */
 class ReverseDifferenceOperation {
 public:
-	BoundaryType operator()(BoundaryType subject_status, BoundaryType clipper_status) const {
-		return DifferenceOperation()(clipper_status, subject_status);
+	BoundaryType operator()(BoundaryType polygon_set_a_status, BoundaryType polygon_set_b_status) const {
+		return DifferenceOperation()(polygon_set_b_status, polygon_set_a_status);
 	}
 };
 
 /**
- * @brief 异或(XOR) subject ^ clipper
+ * @brief 异或(XOR) polygonSetA ^ polygonSetB
  */
 class SymmetricDifferenceOperation {
 	using enum BoundaryType;
@@ -472,15 +472,15 @@ class SymmetricDifferenceOperation {
 		InsideConjugateBoundary,OutsideConjugateBoundary,UpperBoundary,LowerBoundary,Inside,Outside,
 	};
 public:
-	BoundaryType operator()(BoundaryType subject_status, BoundaryType clipper_status) const {
+	BoundaryType operator()(BoundaryType polygon_set_a_status, BoundaryType polygon_set_b_status) const {
 		return symmetricDifferenceMap[
-			BoundaryTypeIndexMap::Index(subject_status) * 6 + BoundaryTypeIndexMap::Index(clipper_status)
+			BoundaryTypeIndexMap::Index(polygon_set_a_status) * 6 + BoundaryTypeIndexMap::Index(polygon_set_b_status)
 		];
 	}
 };
 
 /**
- * @brief 交集 subject & clipper
+ * @brief 交集 polygonSetA & polygonSetB
  */
 class IntersectionOperation {
 	using enum BoundaryType;
@@ -530,9 +530,9 @@ class IntersectionOperation {
 		OutsideConjugateBoundary,Outside,OutsideConjugateBoundary,OutsideConjugateBoundary,Outside,OutsideConjugateBoundary,
 	};
 public:
-	BoundaryType operator()(BoundaryType subject_status, BoundaryType clipper_status) const {
+	BoundaryType operator()(BoundaryType polygon_set_a_status, BoundaryType polygon_set_b_status) const {
 		return intersectionMap[
-			BoundaryTypeIndexMap::Index(subject_status) * 6 + BoundaryTypeIndexMap::Index(clipper_status)
+			BoundaryTypeIndexMap::Index(polygon_set_a_status) * 6 + BoundaryTypeIndexMap::Index(polygon_set_b_status)
 		];
 	}
 };
@@ -781,18 +781,18 @@ using ConnectTypeInnerFirst = ConnectFunction<ExteriorAngleConnectChooseFunction
 
 /**
  * @brief  普通布尔运算模式
- * @tparam SubjectFillType		subject 填充类型
- * @tparam ClipperFillType		clipper 填充类型
+ * @tparam FillTypeA		polygonSetA 填充类型
+ * @tparam FillTypeB		polygonSetB 填充类型
  * @tparam BoolOperationType	布尔运算类型
  */
-template<class SubjectFillType, class ClipperFillType,
+template<class FillTypeA, class FillTypeB,
 	class ConnectType, class BoolOperationType>
 class OrdinaryBoolOperationPattern {
 public:
 	[[no_unique_address]]
-	SubjectFillType subjectFillType;
+	FillTypeA fillTypeA;
 	[[no_unique_address]]
-	ClipperFillType clipperFillType;
+	FillTypeB fillTypeB;
 	[[no_unique_address]]
 	ConnectType connectType;
 	[[no_unique_address]]
@@ -800,10 +800,10 @@ public:
 public:
 	OrdinaryBoolOperationPattern() = default;
 
-	template<class SFT, class CFT, class CT, class BOT>
+		template<class SFT, class CFT, class CT, class BOT>
 	OrdinaryBoolOperationPattern(SFT&& sft, CFT&& cft, CT&& ct, BOT&& bt) :
-		subjectFillType(std::forward<SFT>(sft)),
-		clipperFillType(std::forward<CFT>(cft)),
+		fillTypeA(std::forward<SFT>(sft)),
+		fillTypeB(std::forward<CFT>(cft)),
 		connectType(std::forward<CT>(ct)),
 		boolOperationType(std::forward<BOT>(bt)) {
 	}
@@ -811,15 +811,15 @@ public:
 private:
 	template<class EdgeEvent>
 	void AddSingleEdgeStatus(const EdgeEvent& edge, EdgeGroupFillStatus& status) const {
-		auto& fs = edge.isClipper ? status.clipper : status.subject;
+		auto& fs = edge.isPolygonSetB ? status.polygonSetB : status.polygonSetA;
 		edge.reversed ? (++fs.negitive) : (++fs.positive);
 	}
 
 	template<class Drafting>
 	EdgeGroupFillStatus CalcEdgeFillStatus(const Drafting& drafting, const typename Drafting::EdgeEvent& edge) const {
 		EdgeGroupFillStatus res{};
-		res.clipper.wind = edge.clipperWind;
-		res.subject.wind = edge.subjectWind;
+		res.polygonSetB.wind = edge.windB;
+		res.polygonSetA.wind = edge.windA;
 
 		if (!edge.aggregatedEdges) {
 			AddSingleEdgeStatus(edge, res);
@@ -945,10 +945,10 @@ public:
 
 			EdgeGroupFillStatus status = CalcEdgeFillStatus<Drafting>(drafting, edge);
 
-			auto subject_boundary_status = subjectFillType(status.subject);
-			auto clipper_boundary_status = clipperFillType(status.clipper);
+			auto polygon_set_a_boundary_status = fillTypeA(status.polygonSetA);
+			auto polygon_set_b_boundary_status = fillTypeB(status.polygonSetB);
 			auto res_boundary_status = boolOperationType(
-				subject_boundary_status, clipper_boundary_status
+				polygon_set_a_boundary_status, polygon_set_b_boundary_status
 			);
 
 			types[edge.id] = res_boundary_status;
@@ -1093,10 +1093,10 @@ public:
 	}
 };
 
-#define SIMPLE_PATTERN_DEF(OPERATION) template<class SubjectFillType, class ClipperFillType, \
+#define SIMPLE_PATTERN_DEF(OPERATION) template<class FillTypeA, class FillTypeB, \
 	class ConnectType = ConnectTypeOuterFirst> \
 class OPERATION##Pattern : public OrdinaryBoolOperationPattern< \
-	SubjectFillType, ClipperFillType, \
+	FillTypeA, FillTypeB, \
 ConnectType, OPERATION##Operation\
 > {\
 public:\
@@ -1104,7 +1104,7 @@ public:\
 template<class SFT, class CFT, class CT>\
 OPERATION##Pattern(SFT&& sft, CFT&& cft, CT&& ct) :\
 OrdinaryBoolOperationPattern<\
-	SubjectFillType, ClipperFillType, \
+	FillTypeA, FillTypeB, \
 	ConnectType, OPERATION##Operation \
 >(std::forward<SFT>(sft), std::forward<CFT>(cft), \
 	std::forward<CT>(ct), OPERATION##Operation{}) {\
@@ -1117,24 +1117,24 @@ SIMPLE_PATTERN_DEF(Intersection)
 SIMPLE_PATTERN_DEF(ReverseDifference)
 SIMPLE_PATTERN_DEF(SymmetricDifference)
 
-template<class ClipperFillType, class ConnectType = ConnectTypeOuterFirst>
-class OnlyClipPattern :public UnionPattern<IgnoreFillType, ClipperFillType, ConnectType> {
+template<class FillTypeB, class ConnectType = ConnectTypeOuterFirst>
+class PolygonSetBPattern :public UnionPattern<IgnoreFillType, FillTypeB, ConnectType> {
 public:
-	OnlyClipPattern() = default;
+	PolygonSetBPattern() = default;
 	template<class CFT, class CT>
-	OnlyClipPattern(CFT&& cft, CT&& ct) : UnionPattern<
-		IgnoreFillType, ClipperFillType, ConnectType
+	PolygonSetBPattern(CFT&& cft, CT&& ct) : UnionPattern<
+		IgnoreFillType, FillTypeB, ConnectType
 	>(IgnoreFillType{}, std::forward<CFT>(cft), std::forward<CT>(ct)) {
 	}
 };
 
-template<class SubjectFillType, class ConnectType = ConnectTypeOuterFirst>
-class OnlySubjectPattern :public UnionPattern<SubjectFillType, IgnoreFillType, ConnectType> {
+template<class FillTypeA, class ConnectType = ConnectTypeOuterFirst>
+class PolygonSetAPattern :public UnionPattern<FillTypeA, IgnoreFillType, ConnectType> {
 public:
-	OnlySubjectPattern() = default;
+	PolygonSetAPattern() = default;
 	template<class SFT, class CT>
-	OnlySubjectPattern(SFT&& sft, CT&& ct) : UnionPattern<
-		SubjectFillType, IgnoreFillType, ConnectType
+	PolygonSetAPattern(SFT&& sft, CT&& ct) : UnionPattern<
+		FillTypeA, IgnoreFillType, ConnectType
 	>(std::forward<SFT>(sft), IgnoreFillType{}, std::forward<CT>(ct)) {
 	}
 };

@@ -756,7 +756,10 @@ public:
 
 		std::vector<CurveType> res;
 		for (size_t i = 1, n = points.size(); i < n; ++i) {
-			// TODO 如果两个点过于接近, 则跳过
+			// 如果两个点过于接近, 则跳过
+			if (core.IsSamePosition(points[i - 1], points[i])) {
+				continue;
+			}
 
 			res.emplace_back(
 				core.ConstructCurve(points[i - 1], points[i], edge)
@@ -779,7 +782,12 @@ private:
 		auto a = ab.Point0();
 		auto b = ab.Point1();
 		if (!core.IsArc(ab)) {
-			auto ab_vec = core.Sub(ab.Point1(), ab.Point0());
+			auto ab_vec = core.Sub(b, a);
+			if(core.X(ab_vec) < 1e-7) {
+				// 竖直线段, 直接返回采样点的 y 坐标
+				// ??? 
+				return core.Y(p);
+			}
 			return core.Y(a) + core.Y(ab_vec) / core.X(ab_vec) * (core.X(p) - core.X(a));
 		}
 

@@ -239,7 +239,7 @@ struct TopoVertex {
 	EdgeGroup endGroup;	 // 终点为该点的边集合
 };
 
-// 聚合属性仅记录事件的 Handle, 但可访问属性仅为: isClipper, reversed, 用来计算 clipperWind 与 subjectWind
+// 聚合属性仅记录事件的 Handle, 但可访问属性仅为: isPolygonSetB, reversed, 用来计算 windB 与 windA
 struct AggregatedEdgeEvent {
 	std::vector<Handle> sourceEdges; // 源边的索引
 };
@@ -249,7 +249,7 @@ struct EdgeEvent {
 	Edge edge;						// 边
 	Handle id = npos;				// 该边的索引(此属性其实是多余的, 但是为了考虑方便编程, 还是加上了)
 
-	bool isClipper = false;			// 该边的组别
+	bool isPolygonSetB = false;			// 该边的组别, true 表示属于 polygonSetB, false 表示属于 polygonSetA
 	bool reversed = false;			// 该边的方向是否与输入时相反, 即 monotonicity < 0
 	bool discarded = false;			// 该边是否被废弃, 如果该边被废弃, 则一定会合并或分裂成其他事件, 见下方 firstMerge, firstSplit, secondSplit
 	bool end = false;				// 该边事件是否为完全处理完毕, 当且仅当为 true 时, 可以作为输出事件
@@ -271,11 +271,11 @@ struct EdgeEvent {
 	Handle firstBottom = npos;	    // 下方第一条边的索引(该边可能是 discarded), 该属性用于计算环绕数
 	Handle source = npos;			// 源边的索引, 但是如果该边为聚合边, 则实际的源边有多个
 
-	Int clipperWind = 0;			// 裁剪边的环绕数, 如果 discarded ,则该属性无效
-	Int subjectWind = 0;			// 被裁剪边的环绕数, 如果 discarded ,则该属性无效
+	Int windB = 0;			// polygonSetB 的环绕数, 如果 discarded ,则该属性无效
+	Int windA = 0;			// polygonSetA 的环绕数, 如果 discarded ,则该属性无效
 
-	// 如果该边为聚合边, 则该属性不为空, 聚合边内的所有边的属性不一定全是相同的, 比如: isClipper, reversed
-	// 该属性用于记录所有边的源边的索引, 但可访问属性仅为: isClipper, reversed, 用于计算 clipperWind 与 subjectWind
+	// 如果该边为聚合边, 则该属性不为空, 聚合边内的所有边的属性不一定全是相同的, 比如: isPolygonSetB, reversed
+	// 该属性用于记录所有边的源边的索引, 但可访问属性仅为: isPolygonSetB, reversed, 用于计算 windB 与 windA
 	std::unique_ptr<AggregatedEdgeEvent> aggregatedEdges = nullptr;
 
 	bool IsAggregatedEdge() const {
@@ -308,18 +308,18 @@ public:
 		return ea;
 	}
 private:
-	std::vector<Edge> clipper;
-	std::vector<Edge> subject;
+	std::vector<Edge> polygonSetB;
+	std::vector<Edge> polygonSetA;
 
 	EdgeAnalyzer ea;
 public:
 	template<EdgeIteratorConcept<Edge> EdgeIterator>
-	void AddClipper(EdgeIterator begin, EdgeIterator end) {
-		clipper.insert(clipper.cend(), begin, end);
+	void AddToPolygonSetB(EdgeIterator begin, EdgeIterator end) {
+		polygonSetB.insert(polygonSetB.cend(), begin, end);
 	}
 	template<EdgeIteratorConcept<Edge> EdgeIterator>
-	void AddSubject(EdgeIterator begin, EdgeIterator end) {
-		subject.insert(subject.cend(), begin, end);
+	void AddToPolygonSetA(EdgeIterator begin, EdgeIterator end) {
+		polygonSetA.insert(polygonSetA.cend(), begin, end);
 	}
 
 	struct PatternDrafting {

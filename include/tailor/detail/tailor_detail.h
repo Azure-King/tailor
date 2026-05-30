@@ -1,7 +1,5 @@
 ﻿#pragma once
 
-#include "tailor.h"
-
 namespace detail {
 
 template<EdgeConcept Edge, EdgeAnalyzerConcept<Edge> EdgeAnalyzer, class Container>
@@ -134,13 +132,13 @@ public:
 	using VEQ = VertexEventQueue<Edge, EdgeAnalyzer, std::vector<VertexEventGroup>>;
 
 	EdgeStateSet(VEQ& veq, std::vector<EdgeEvent>& edge_events, EdgeAnalyzer& ea,
-		const std::vector<Edge>& clipper, const std::vector<Edge>& subject) :
+		const std::vector<Edge>& polygonSetB, const std::vector<Edge>& polygonSetA) :
 		veq(veq), edgeEvents(edge_events), ea(ea) {
-		size_t edge_size = clipper.size() + subject.size();
+		size_t edge_size = polygonSetB.size() + polygonSetA.size();
 		topoVertices.reserve(edge_size * 2.5);
 		edgeEvents.reserve(edge_size * 2.5);
 
-		CreateEvents(clipper, subject);
+		CreateEvents(polygonSetB, polygonSetA);
 	}
 
 	void PreprocessEvents(std::vector<VertexEvent>& start_events2, std::vector<VertexEvent>& end_events) {
@@ -492,10 +490,10 @@ public:
 	}
 
 	template<class E>
-	EdgeEvent MakeEdgeEvent(E&& e, Handle id, bool is_clipper) {
+	EdgeEvent MakeEdgeEvent(E&& e, Handle id, bool is_polygon_set_b) {
 		EdgeEvent ee{ std::forward<E>(e) };
 		ee.id = id;
-		ee.isClipper = is_clipper;
+		ee.isPolygonSetB = is_polygon_set_b;
 		return ee;
 	}
 
@@ -531,7 +529,7 @@ public:
 
 	struct CopyGroup {
 		inline void operator()(EdgeEvent& derived, const EdgeEvent& base) const {
-			derived.isClipper = base.isClipper;
+			derived.isPolygonSetB = base.isPolygonSetB;
 		}
 	};
 
@@ -560,8 +558,8 @@ public:
 
 	struct CopyWinds {
 		inline void operator()(EdgeEvent& derived, const EdgeEvent& base) const {
-			derived.clipperWind = base.clipperWind;
-			derived.subjectWind = base.subjectWind;
+			derived.windB = base.windB;
+			derived.windA = base.windA;
 		}
 	};
 
@@ -728,12 +726,12 @@ public:
 	}
 
 	struct GroupWindResult {
-		Int clipperWind = 0;
-		Int subjectWind = 0;
+		Int windB = 0;
+		Int windA = 0;
 
 		void operator>>(EdgeEvent& ee) const {
-			ee.clipperWind = clipperWind;
-			ee.subjectWind = subjectWind;
+			ee.windB = windB;
+			ee.windA = windA;
 		}
 	};
 
@@ -742,27 +740,27 @@ public:
 		GroupWindResult winds{};
 		if (begin == end) return winds;
 		const auto& ee = GetEdgeEvent((end - 1)->e);
-		winds.clipperWind = ee.clipperWind;
-		winds.subjectWind = ee.subjectWind;
+		winds.windB = ee.windB;
+		winds.windA = ee.windA;
 		if (ee.aggregatedEdges) TAILOR_UNLIKELY{
 			for (auto ae : ee.aggregatedEdges->sourceEdges) {
 				auto& aee = GetEdgeEvent(ae);
-				auto& wind = aee.isClipper ? winds.clipperWind : winds.subjectWind;
+				auto& wind = aee.isPolygonSetB ? winds.windB : winds.windA;
 				wind += aee.reversed ? -1 : +1;
 			}
 		} else {
-			auto& wind = ee.isClipper ? winds.clipperWind : winds.subjectWind;
+			auto& wind = ee.isPolygonSetB ? winds.windB : winds.windA;
 			wind += ee.reversed ? -1 : +1;
 		}
 		return winds;
 	}
 
-	void CreateEvents(const std::vector<Edge>& clipper, const std::vector<Edge>& subject) {
-		for (const auto& e : clipper) {
-			RegisterEdge(e).isClipper = true;
+	void CreateEvents(const std::vector<Edge>& polygonSetB, const std::vector<Edge>& polygonSetA) {
+		for (const auto& e : polygonSetB) {
+			RegisterEdge(e).isPolygonSetB = true;
 		}
-		for (const auto& e : subject) {
-			RegisterEdge(e).isClipper = false;
+		for (const auto& e : polygonSetA) {
+			RegisterEdge(e).isPolygonSetB = false;
 		}
 
 		for (size_t i = 0, n = edgeEvents.size(); i < n; ++i) {
@@ -903,9 +901,9 @@ inline auto Tailor<Edge, EdgeAnalyzer>::Execute() -> PatternDrafting {
 	std::vector<EdgeEvent> edge_events;
 
 	//container.reserve(20000);
-	container.reserve(static_cast<size_t>((clipper.size() + subject.size()) * 2.5));
+	container.reserve(static_cast<size_t>((polygonSetB.size() + polygonSetA.size()) * 2.5));
 	VEQ queue(ea, edge_events, std::move(container));
-	detail::EdgeStateSet<Edge, EdgeAnalyzer> set(queue, edge_events, ea, clipper, subject);
+	detail::EdgeStateSet<Edge, EdgeAnalyzer> set(queue, edge_events, ea, polygonSetB, polygonSetA);
 
 	// 顶点事件入队
 
