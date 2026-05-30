@@ -80,19 +80,19 @@ void test_tailor() {
     // 创建弧线分析器
     ArcAnalyser analyser;
 
-    std::vector<Arc> clipper;
-    clipper.reserve(4);
-    clipper.emplace_back(Point2d(0, 0), Point2d(4, 0), 0.1);
-    clipper.emplace_back(Point2d(4, 0), Point2d(4, 4), 0.0);
-    clipper.emplace_back(Point2d(4, 4), Point2d(0, 4), 0.1);
-    clipper.emplace_back(Point2d(0, 4), Point2d(0, 0), 0.0);
+	std::vector<Arc> polygon_set_b;
+	polygon_set_b.reserve(4);
+	polygon_set_b.emplace_back(Point2d(0, 0), Point2d(4, 0), 0.1);
+	polygon_set_b.emplace_back(Point2d(4, 0), Point2d(4, 4), 0.0);
+	polygon_set_b.emplace_back(Point2d(4, 4), Point2d(0, 4), 0.1);
+	polygon_set_b.emplace_back(Point2d(0, 4), Point2d(0, 0), 0.0);
 
-    std::vector<Arc> subject;
-    subject.reserve(4);
-    subject.emplace_back(Point2d(2, 1), Point2d(6, 1), 0.0);
-    subject.emplace_back(Point2d(6, 1), Point2d(6, 3), 0.08);
-    subject.emplace_back(Point2d(6, 3), Point2d(2, 3), 0.0);
-    subject.emplace_back(Point2d(2, 3), Point2d(2, 1), 0.05);
+	std::vector<Arc> polygon_set_a;
+	polygon_set_a.reserve(4);
+	polygon_set_a.emplace_back(Point2d(2, 1), Point2d(6, 1), 0.0);
+	polygon_set_a.emplace_back(Point2d(6, 1), Point2d(6, 3), 0.08);
+	polygon_set_a.emplace_back(Point2d(6, 3), Point2d(2, 3), 0.0);
+	polygon_set_a.emplace_back(Point2d(2, 3), Point2d(2, 1), 0.05);
 
     // ================================
     // 创建 Tailor 并执行计算流程
@@ -100,8 +100,8 @@ void test_tailor() {
 
     TailorType tailor(analyser);
 
-    tailor.AddClipper(clipper.begin(), clipper.end());
-    tailor.AddSubject(subject.begin(), subject.end());
+	tailor.AddToPolygonSetB(polygon_set_b.begin(), polygon_set_b.end());
+	tailor.AddToPolygonSetA(polygon_set_a.begin(), polygon_set_a.end());
 
     auto drafting = tailor.Execute();
     std::cout << "Drafting result:" << std::endl;
