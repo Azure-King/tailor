@@ -400,8 +400,10 @@ public:
 		return result;
 	}
 
-	MonotonicSplitResult<CurveType> SplitToMonotonic(const CurveType& edge) {
-		return MonotonicSplitResult<CurveType>{ edge };
+	template <typename OutIt>
+	OutIt SplitToMonotonic(const CurveType& edge, OutIt out) {
+		*out++ = edge;
+		return out;
 	}
 private:
 	auto SampleInX(const PointType& a, const PointType& b, const PointType& p) const {

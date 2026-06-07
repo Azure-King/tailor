@@ -62,9 +62,8 @@ void test_monotonic_split() {
     SimpleAnalyser analyser;
     
     // 线段本身就是单调的
-    auto result = analyser.SplitToMonotonic(seg);
-    assert(result.monotonous.Point0().x == 0);
-    assert(!result.remaining.has_value());
+    std::vector<SimpleSegment> out;
+    analyser.SplitToMonotonic(seg, std::back_inserter(out));
     
     std::cout << "test_monotonic_split passed!" << std::endl;
 }

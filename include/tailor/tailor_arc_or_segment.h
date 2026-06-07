@@ -667,35 +667,12 @@ public:
 		};
 	}
 
-	// ERROR
-	MonotonicSplitResult<CurveType> SplitToMonotonic(const CurveType& edge) {
-		if (!ArcSegmentUtils<ArcType>{}.IsArc(edge)) {
-			return MonotonicSplitResult<CurveType>{edge};
-		}
-
-		const auto a = edge.Point0();
-		const auto b = edge.Point1();
-		const auto o = core.Center(edge);
-
-		const auto oa = core.Sub(a, o);
-		const auto ob = core.Sub(b, o);
-		{
-			auto r0 = core.Radius(edge);
-			auto r1 = core.Len(oa);
-			auto r2 = core.Len(ob);
-		}
-
-		using namespace std;
-		auto ta = atan2(core.Y(oa), core.X(oa));
-		if (ta < 0) ta += TAILOR_2PI;
-		auto tb = atan2(core.Y(ob), core.X(ob));
-		if (tb < 0) tb += TAILOR_2PI;
-	}
-
-	// TODO
-	std::vector<CurveType> SplitToMonotonic2(const CurveType& edge) const {
+	// 将一条曲线分割为在X上单调的若干曲线段，通过输出迭代器输出结果
+	template <typename OutIt>
+	OutIt SplitToMonotonic(const CurveType& edge, OutIt out) const {
 		if (!ArcSegmentTraits<ArcType>{}.IsArc(edge)) {
-			return { edge };
+			*out++ = edge;
+			return out;
 		}
 
 		const auto a = core.Point0(edge);
@@ -743,7 +720,8 @@ public:
 		}
 
 		if (ts.empty()) {
-			return { edge };
+			*out++ = edge;
+			return out;
 		}
 
 		std::vector<PointType> points;
@@ -754,18 +732,15 @@ public:
 		}
 		points.emplace_back(b);
 
-		std::vector<CurveType> res;
 		for (size_t i = 1, n = points.size(); i < n; ++i) {
 			// 如果两个点过于接近, 则跳过
 			if (core.IsSamePosition(points[i - 1], points[i])) {
 				continue;
 			}
 
-			res.emplace_back(
-				core.ConstructCurve(points[i - 1], points[i], edge)
-			);
+			*out++ = core.ConstructCurve(points[i - 1], points[i], edge);
 		}
-		return res;
+		return out;
 	}
 
 private:

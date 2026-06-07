@@ -1,9 +1,11 @@
 ﻿#pragma once
 
 #include <concepts>
+#include <iterator>
 #include <optional>
 #include <stdexcept>
 #include <type_traits>
+#include <vector>
 
 #define TAILOR_NAMESPACE_BEGIN namespace tailor {
 #define TAILOR_NAMESPACE_END }
@@ -220,7 +222,7 @@ concept EdgeAnalyzerConcept = requires(EdgeAnalyzer ea, Edge a, Edge b) {
 
 	ea.Reverse(a); requires std::same_as<Edge, std::remove_cvref_t<decltype(ea.Reverse(a))>>;
 
-	ea.SplitToMonotonic(a); requires std::same_as<MonotonicSplitResult<Edge>, std::remove_cvref_t<decltype(ea.SplitToMonotonic(a))>>;
+	ea.SplitToMonotonic(a, std::back_inserter(std::declval<std::vector<Edge>&>()));
 
 	// 重命名? classify edge relative elevation
 	//ea.CalcateEdgeRelativePosition(a, b);

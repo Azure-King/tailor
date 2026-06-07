@@ -575,20 +575,6 @@ public:
 		}
 	};
 
-	struct CopyMonotonicity {
-		inline void operator()(EdgeEvent& derived, const EdgeEvent& base) const {
-			derived.monotonicity = base.monotonicity;
-		}
-	};
-
-	struct InvertMonotonicity {
-		inline void operator()(EdgeEvent& derived, const EdgeEvent& base) const {
-			derived.monotonicity = static_cast<::tailor::VertexRelativePositionType>(
-				-static_cast<int>(base.monotonicity)
-				);
-		}
-	};
-
 	struct CopySource {
 		inline void operator()(EdgeEvent& derived, const EdgeEvent& base) const {
 			derived.source = base.id;
@@ -665,20 +651,19 @@ public:
 
 			Inherit<
 				DiscardBase, CopySource, CopyGroup,
-				CopyPolarity, CopyMonotonicity, CopyAggregatedEdges,
+				CopyPolarity, CopyAggregatedEdges,
 				TrackSecondSegmentedEdge
 			>(ib_event, ab_event);
 
 			Inherit<
 				DiscardBase, CopySource, CopyGroup,
-				CopyPolarity, CopyMonotonicity, CopyAggregatedEdges,
+				CopyPolarity, CopyAggregatedEdges,
 				TrackSecondSegmentedEdge
 			>(id_event, cd_event);
 
 			Inherit<
 				DiscardBase, CopySource, CopyGroup, CopyPolarity,
-				CopyMonotonicity, CopyAggregatedEdges,
-				TrackFirstSegmentedEdge
+				CopyAggregatedEdges, TrackFirstSegmentedEdge
 			>(ai_event, ab_event);
 
 			Inherit<MergeAggregatedEdges, MergeFirstSegmentedEdge>(ai_event, cd_event);
@@ -691,7 +676,7 @@ public:
 
 			Inherit<
 				DiscardBase, CopySource, CopyGroup,
-				CopyPolarity, CopyMonotonicity, CopyAggregatedEdges,
+				CopyPolarity, CopyAggregatedEdges,
 				TrackSecondSegmentedEdge
 			>(id_event, cd_event);
 
@@ -705,7 +690,7 @@ public:
 
 			Inherit<
 				DiscardBase, CopySource, CopyGroup,
-				CopyPolarity, CopyMonotonicity, CopyAggregatedEdges,
+				CopyPolarity, CopyAggregatedEdges,
 				TrackSecondSegmentedEdge
 			>(ib_event, ab_event);
 
@@ -756,10 +741,21 @@ public:
 	}
 
 	void CreateEvents(const std::vector<Edge>& polygonSetB, const std::vector<Edge>& polygonSetA) {
+		// 先将输入边分割为在X上单调的曲线段，再注册事件
+		std::vector<Edge> temp_b, temp_a;
+		temp_b.reserve(polygonSetB.size());
+		temp_a.reserve(polygonSetA.size());
 		for (const auto& e : polygonSetB) {
-			RegisterEdge(e).isPolygonSetB = true;
+			ea.SplitToMonotonic(e, std::back_inserter(temp_b));
 		}
 		for (const auto& e : polygonSetA) {
+			ea.SplitToMonotonic(e, std::back_inserter(temp_a));
+		}
+
+		for (const auto& e : temp_b) {
+			RegisterEdge(e).isPolygonSetB = true;
+		}
+		for (const auto& e : temp_a) {
 			RegisterEdge(e).isPolygonSetB = false;
 		}
 
@@ -768,15 +764,14 @@ public:
 			if (old_event.discarded) continue;
 
 			auto& edge = edgeEvents[i].edge;
-			old_event.monotonicity = ea.CalcateVertexRelativePosition(ea.Start(edge), ea.End(edge));
+			auto monotonicity = ea.CalcateVertexRelativePosition(ea.Start(edge), ea.End(edge));
 
-			if (!Negative(old_event.monotonicity)) continue;
+			if (!Negative(monotonicity)) continue;
 
 			auto& new_event = RegisterEdge(ea.Reverse(edge));
 
 			Inherit<
-				DiscardBase, CopySource, CopyGroup,
-				InvertPolarity, InvertMonotonicity
+				DiscardBase, CopySource, CopyGroup, InvertPolarity
 			>(new_event, GetEdgeEvent(i));
 		}
 	}
@@ -795,13 +790,13 @@ public:
 
 		Inherit<
 			DiscardBase, CopySource, CopyGroup, CopyWinds,
-			CopyPolarity, CopyMonotonicity, CopyAggregatedEdges,
+			CopyPolarity, CopyAggregatedEdges,
 			CopyStartingVertex, CopyEndVertex, CopyFirstBottomEdge,
 			TrackFirstSegmentedEdge
 		>(ai_event, ab_event);
 		Inherit<
 			DiscardBase, CopySource, CopyGroup, CopyWinds,
-			CopyPolarity, CopyMonotonicity, CopyAggregatedEdges,
+			CopyPolarity, CopyAggregatedEdges,
 			TrackSecondSegmentedEdge
 		>(ib_event, ab_event);
 		return SplitEventResult{ ai_event, ib_event };
