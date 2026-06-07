@@ -434,7 +434,6 @@ public:
 			if (events.end() == begin /* 上方无边 */) break;
 			if (events.begin() == begin /* 下方无边 */) continue;
 
-			//VertexRelativePositionType vrp = ea.CalcateVertexRelativePosition((begin - 1)->v, begin->v);
 			const ::tailor::VertexRelativePositionType vrp = ea.CalcateVertexRelativePosition(
 				GetPointInVertexEvent(*(begin - 1)), GetPointInVertexEvent(*begin)
 			);
@@ -452,8 +451,6 @@ public:
 				OnlyFocusOnRelativePositionDetailsWithoutCoincidence{}
 			);
 
-			//const auto& debug_edge0 = GetEdgeEvent(ab_it->e);
-			//const auto& debug_edge1 = GetEdgeEvent(cd_it->e);
 			assert(erp.HasPiece(CI));
 
 			VertexEventGroup group{};
@@ -463,15 +460,12 @@ public:
 				// 将 ab_it 指向的起始点事件替换为 AI 的起始点事件
 				*ab_it = MakeStartVertexEvent(spr.aiEvent.id);
 
+				// 重新加入事件: AI 的终点事件、IB 的起点事件
+				// IB 的终点事件稍后会自动更新（见GetUpdatedEdge）
 				group.Add(
 					spr.aiEvent.id, false,
 					spr.ibEvent.id, true
 				);
-
-				// 重新加入事件: AI 的终点事件、IB 的起点事件、IB 的终点事件
-				//veq.Push(MakeEndVertexEvent(spr.aiEvent.id));
-				//veq.Push(MakeStartVertexEvent(spr.ibEvent.id));
-				//veq.Push(MakeEndVertexEvent(spr.ibEvent.id));
 			}
 
 			if (erp.HasPiece(ID)) {
@@ -480,15 +474,12 @@ public:
 				// 将 cd_it 指向的起始点事件替换为 CI 的起始点事件
 				*cd_it = MakeStartVertexEvent(spr.aiEvent.id);
 
+				// 重新加入事件: CI 的终点事件、ID 的起点事件
+				// ID 的终点事件稍后会自动更新（见GetUpdatedEdge）
 				group.Add(
 					spr.aiEvent.id, false,
 					spr.ibEvent.id, true
 				);
-
-				// 重新加入事件: CI 的终点事件、ID 的起点事件、ID 的终点事件
-				//veq.Push(MakeEndVertexEvent(spr.aiEvent.id));
-				//veq.Push(MakeStartVertexEvent(spr.ibEvent.id));
-				//veq.Push(MakeEndVertexEvent(spr.ibEvent.id));
 			}
 			if (group.edges[0] != npos) {
 				veq.Push(group);
@@ -923,7 +914,6 @@ inline auto Tailor<Edge, EdgeAnalyzer>::Execute() -> PatternDrafting {
 	std::vector<VertexEventGroup> container;
 	std::vector<EdgeEvent> edge_events;
 
-	//container.reserve(20000);
 	container.reserve(static_cast<size_t>((polygonSetB.size() + polygonSetA.size()) * 2.5));
 	VEQ queue(ea, edge_events, std::move(container));
 	detail::EdgeStateSet<Edge, EdgeAnalyzer> set(queue, edge_events, ea, polygonSetB, polygonSetA);
@@ -935,45 +925,21 @@ inline auto Tailor<Edge, EdgeAnalyzer>::Execute() -> PatternDrafting {
 		if (edge.discarded) continue;
 		queue.Push(i, true);
 		queue.Push(i, false);
-		//queue.Push(ea.Start(edge.edge), i, true);
-		//queue.Push(ea.End(edge.edge), i, false);
 	}
 
 	std::vector<VertexEvent> start_events;
 	std::vector<VertexEvent> end_events;
 
-	//size_t times = 0;
 	// 顶点事件出队
 	while (!queue.Empty()) {
-		//times++;
-
-		//if (times == 130) {
-		//	int ccc = 0;
-		//}
-
 		// 取出所有的相同位置的顶点事件
 		queue.PopAllEvents(start_events, end_events);
-		// 现在应该可以禁用 RemoveDiscardedEvent 了
-		//set.RemoveDiscardedEvent(start_events);
-		//set.RemoveDiscardedEvent(end_events);
 
 		// 事件处理的有效边总数必须为偶数
 		assert((
 			set.CalcVaildEdgeSize(start_events) +
 			set.CalcVaildEdgeSize(end_events))
 			% 2 == 0);
-
-		//for (auto& se : start_events)
-		//{
-		//	const auto& edge = set.GetEdgeEvent(se.e);
-		//	this->DebugFunc3(edge, se.start);
-		//}
-
-		//for (auto& ee : end_events)
-		//{
-		//	const auto& edge = set.GetEdgeEvent(ee.e);
-		//	this->DebugFunc3(edge, ee.start);
-		//}
 
 		auto& vertex = set.RegisterVertex();
 
