@@ -264,8 +264,8 @@ public:
 		return cTraits.Construct(a, b, from);
 	}
 private:
-	bool IsSamePosition(const PointType& a, const PointType& b) const {
-		return pUtils.IsSamePosition(a, b, 1e-10);
+	bool IsSamePosition(const PointType& a, const PointType& b,double tolerance) const {
+		return pUtils.IsSamePosition(a, b, tolerance);
 	}
 
 	PointType ProjectLine(const PointType& p, const CurveType& line) const {
@@ -329,17 +329,17 @@ public:
 	ArcSegmentAnalyserCore() = default;
 	template<class... Args>
 	auto DirectionFromTo(Args&&... args) const {
-		return Super0::DirectionFromTo(std::forward<Args>(args)..., Precision::VALUE_EPSILON);
+		return Super0::DirectionFromTo(std::forward<Args>(args)..., Precision::ValueEpsilon());
 	}
 
 	template<class... Args>
 	auto Intersect(Args&&... args) const {
-		return Super2::Intersect(std::forward<Args>(args)..., Precision::VALUE_EPSILON);
+		return Super2::Intersect(std::forward<Args>(args)..., Precision::ValueEpsilon());
 	}
 
 	template<class... Args>
 	auto IsSamePosition(Args&&... args) const {
-		return Super0::IsSamePosition(std::forward<Args>(args)..., Precision::VALUE_EPSILON);
+		return Super0::IsSamePosition(std::forward<Args>(args)..., Precision::ValueEpsilon());
 	}
 };
 
@@ -349,6 +349,7 @@ public:
 	using PointType = typename ArcType::PointType;
 	using CoordinateType = typename PointTraits<PointType>::CoordinateType;
 	using CurveType = ArcType;
+	using Precision = typename Core::Precision;
 
 	static const PointType& Start(const CurveType& curve) { return curve.Point0(); }
 	static const PointType& End(const CurveType& curve) { return curve.Point1(); }
@@ -629,7 +630,7 @@ public:
 		auto l = core.Len(op);
 
 		using std::abs;
-		if (abs(r - l) > 1e-7) {
+		if (abs(r - l) > Precision::ValueEpsilon()) {
 			return false;
 		}
 
@@ -758,7 +759,7 @@ private:
 		auto b = ab.Point1();
 		if (!core.IsArc(ab)) {
 			auto ab_vec = core.Sub(b, a);
-			if(core.X(ab_vec) < 1e-7) {
+			if(core.X(ab_vec) < Precision::ValueEpsilon()) {
 				// 竖直线段, 直接返回采样点的 y 坐标
 				// ??? 
 				return core.Y(p);
@@ -771,11 +772,11 @@ private:
 		auto d = core.X(p) - core.X(center);
 
 		using namespace std;
-		if (abs(d - r) <= 1e-7 || abs(d + r) <= 1e-7) {
+		if (abs(d - r) <= Precision::ValueEpsilon() || abs(d + r) <= Precision::ValueEpsilon()) {
 			// 误差
 			// 在 C 点处采样, 但 C 点为单调分割点, 半径计算误差导致 d 略长于 r
 			return core.Y(center);
-		} else if (d - r >= 1e-7 /*采样点在圆右边*/ || d + r <= -1e-7 /*采样点在圆左边*/) {
+		} else if (d - r >= Precision::ValueEpsilon() /*采样点在圆右边*/ || d + r <= -Precision::ValueEpsilon() /*采样点在圆左边*/) {
 			throw "";
 		}
 

@@ -73,6 +73,17 @@ struct LineSegmentTraits {
 	}
 };
 
+/**
+ * @brief 精度概念
+ * @tparam T 精度类型，要求提供三个静态无参 Epsilon 函数，返回值均为浮点数
+ */
+template <typename T>
+concept PrecisionConcept = requires {
+	{ T::ValueEpsilon() } -> std::floating_point;
+	{ T::PointEpsilon() } -> std::floating_point;
+	{ T::AngleEpsilon() } -> std::floating_point;
+};
+
 template<size_t precision>
 struct PrecisionCore {
 	static constexpr double Epsilon(size_t preci) {
@@ -84,9 +95,9 @@ struct PrecisionCore {
 		return result;
 	};
 
-	static constexpr double VALUE_EPSILON = Epsilon(precision);
-	static constexpr double POINT_EPSILON = Epsilon(precision);
-	static constexpr double ANGLE_EPSILON = Epsilon(precision);
+	static constexpr double ValueEpsilon() { return Epsilon(precision); }
+	static constexpr double PointEpsilon() { return Epsilon(precision); }
+	static constexpr double AngleEpsilon() { return Epsilon(precision); }
 };
 
 /**
@@ -117,7 +128,6 @@ public:
 
 	CurveType ConstructCurve(const PointType& a, const PointType& b,
 		const CurveType& from) const {
-		assert(!pUtils.IsSamePosition(a, b, 1e-10));
 		return cTraits.Construct(a, b, from);
 	}
 
@@ -189,12 +199,12 @@ public:
 
 	template<class... Args>
 	auto GetCrossPoint(Args&&... args) const {
-		return Super1::GetCrossPoint(std::forward<Args>(args)..., Precision::VALUE_EPSILON);
+		return Super1::GetCrossPoint(std::forward<Args>(args)..., Precision::ValueEpsilon());
 	}
 
 	template<class... Args>
 	auto DirectionFromTo(Args&&... args) const {
-		return Super0::DirectionFromTo(std::forward<Args>(args)..., Precision::VALUE_EPSILON);
+		return Super0::DirectionFromTo(std::forward<Args>(args)..., Precision::ValueEpsilon());
 	}
 };
 
