@@ -82,6 +82,12 @@ public:
 
 	// 圆弧构造
 	CurveType Construct(const PointType& a, const PointType& b, const CurveType& from) const {
+		const auto ab = pUtils.Sub(a, b);
+		if (pUtils.Len(ab)<1e-7) {
+			int cccs = 0;
+		}
+
+		
 		if (!IsArc(from)) {
 			if constexpr (std::is_same_v<typename CurveType::UserDataType, void>) {
 				return CurveType(a, b, 0);

@@ -253,47 +253,60 @@ public:
 		CurveRelativePositionResult2<CurveType> result{};
 
 		// 如果 B 和 D 重合, 则两条边重合
-		if (CalcateVertexRelativePosition(B, D) == VertexRelativePositionType::Same) TAILOR_UNLIKELY{
+		if (CalcateVertexRelativePosition(B, D) == VertexRelativePositionType::Same) {
 			result.positionType = CurveRelativePositionType::Coincident;
 			result.edges[AI_index] = ab;
 			result.edges[CI_index] = cd;
 			return result;
 		}
 
-			// 如果 B 在 CD 上
-			if (IsOnEdge(B, cd)) TAILOR_UNLIKELY{
-				result.positionType = CurveRelativePositionType::Coincident;
-				result.edges[AI_index] = ab;
+		// 如果 B 在 CD 上
+		if (IsOnEdge(B, cd)) {
+			result.positionType = CurveRelativePositionType::Coincident;
+			result.edges[AI_index] = ab;
 
-				auto split_result = SplitEdge(cd, B);
-				result.edges[CI_index] = std::move(split_result.GetPiece(AI)); // move 目前没什么用
-				result.edges[ID_index] = std::move(split_result.GetPiece(IB));
-				return result;
-			}
+			auto split_result = SplitEdge(cd, B);
+			result.edges[CI_index] = std::move(split_result.GetPiece(AI)); // move 目前没什么用
+			result.edges[ID_index] = std::move(split_result.GetPiece(IB));
+			return result;
+		}
 
-				// 如果 D 在 AB 上
-				if (IsOnEdge(D, ab)) TAILOR_UNLIKELY{
-					result.positionType = CurveRelativePositionType::Coincident;
-					result.edges[CI_index] = cd;
+		// 如果 D 在 AB 上
+		if (IsOnEdge(D, ab)) {
+			result.positionType = CurveRelativePositionType::Coincident;
+			result.edges[CI_index] = cd;
 
-					auto split_result = SplitEdge(ab, D);
-					result.edges[AI_index] = std::move(split_result.GetPiece(AI)); // move 目前没什么用
-					result.edges[IB_index] = std::move(split_result.GetPiece(IB));
-					return result;
-				}
+			auto split_result = SplitEdge(ab, D);
+			result.edges[AI_index] = std::move(split_result.GetPiece(AI)); // move 目前没什么用
+			result.edges[IB_index] = std::move(split_result.GetPiece(IB));
+			return result;
+		}
 
-		auto AB = core.Sub(B, A);
-		auto CD = core.Sub(D, C);
+		auto vrp_ab = CalcateVertexRelativePosition(A, B);
+		auto vrp_cd = CalcateVertexRelativePosition(C, D);
 
-		// ??? 此处 x 有没有可能为很小的负数, 此时曲线单调性会判断为 Top
-		auto ab_k = Y(AB) / X(AB);
-		auto cd_k = Y(CD) / X(CD);
+		// 如果两条边均竖直向上, 应该命中 IsOnEdge(B, cd) 或 IsOnEdge(D, ab)
+		assert(!(vrp_ab == VertexRelativePositionType::Top
+			&& vrp_cd == VertexRelativePositionType::Top));
 
-		// 比较斜率大小
-		if (ab_k > cd_k) {
+		if (vrp_ab == VertexRelativePositionType::Top) {
 			result.positionType = CurveRelativePositionType::Downward;
-		} else {
+		} else if (vrp_cd == VertexRelativePositionType::Top) {
 			result.positionType = CurveRelativePositionType::Upward;
+		} else {
+			auto AB = core.Sub(B, A);
+			auto CD = core.Sub(D, C);
+
+			// 如果曲线为 Top, 此处 x 有可能为很小的负数, 导致下方比较斜率出问题
+			auto ab_k = Y(AB) / X(AB);
+			auto cd_k = Y(CD) / X(CD);
+
+			// 比较斜率大小
+			if (ab_k > cd_k) {
+				result.positionType = CurveRelativePositionType::Downward;
+			} else {
+				result.positionType = CurveRelativePositionType::Upward;
+			}
 		}
 		return result;
 	}
@@ -308,18 +321,18 @@ public:
 		CurveRelativePositionResult2<CurveType> result{};
 
 		// AB 竖直向上, 由于两曲线不重合, 所以结果必定是 Downward
-		if (CalcateVertexRelativePosition(A, B) == VertexRelativePositionType::Top) TAILOR_UNLIKELY{
+		if (CalcateVertexRelativePosition(A, B) == VertexRelativePositionType::Top) {
 			result.positionType = CurveRelativePositionType::Downward;
 			return result;
 		}
 
-			if (SampleInX(A, B, C) > Y(C)) {
-				result.positionType = CurveRelativePositionType::Downward;
-				return result;
-			} else {
-				result.positionType = CurveRelativePositionType::Upward;
-				return result;
-			}
+		if (SampleInX(A, B, C) > Y(C)) {
+			result.positionType = CurveRelativePositionType::Downward;
+			return result;
+		} else {
+			result.positionType = CurveRelativePositionType::Upward;
+			return result;
+		}
 	}
 
 	CurveRelativePositionResult2<CurveType> CalcateEdgeRelativePosition(const CurveType& ab, const CurveType& cd,
@@ -332,18 +345,31 @@ public:
 		CurveRelativePositionResult2<CurveType> result{};
 
 		if (CalcateVertexRelativePosition(A, C) == VertexRelativePositionType::Same) {
-			auto AB = core.Sub(B, A);
-			auto CD = core.Sub(D, C);
+			auto vrp_ab = CalcateVertexRelativePosition(A, B);
+			auto vrp_cd = CalcateVertexRelativePosition(C, D);
 
-			// ??? 此处 x 有没有可能为很小的负数, 此时曲线单调性会判断为 Top
-			auto ab_k = Y(AB) / X(AB);
-			auto cd_k = Y(CD) / X(CD);
+			// 如果两条边均竖直向上, 应该命中 IsOnEdge(B, cd) 或 IsOnEdge(D, ab)
+			assert(!(vrp_ab == VertexRelativePositionType::Top
+				&& vrp_cd == VertexRelativePositionType::Top));
 
-			// 比较斜率大小
-			if (ab_k > cd_k) {
+			if (vrp_ab == VertexRelativePositionType::Top) {
 				result.positionType = CurveRelativePositionType::Downward;
-			} else {
+			} else if (vrp_cd == VertexRelativePositionType::Top) {
 				result.positionType = CurveRelativePositionType::Upward;
+			} else {
+				auto AB = core.Sub(B, A);
+				auto CD = core.Sub(D, C);
+
+				// 如果曲线为 Top, 此处 x 有可能为很小的负数, 导致下方比较斜率出问题
+				auto ab_k = Y(AB) / X(AB);
+				auto cd_k = Y(CD) / X(CD);
+
+				// 比较斜率大小
+				if (ab_k > cd_k) {
+					result.positionType = CurveRelativePositionType::Downward;
+				} else {
+					result.positionType = CurveRelativePositionType::Upward;
+				}
 			}
 
 			result.edges[AI_index] = ab;
@@ -352,7 +378,7 @@ public:
 		}
 
 		// 如果 B 在 CD 上
-		if (IsOnEdge(B, cd)) TAILOR_UNLIKELY{
+		if (IsOnEdge(B, cd)) {
 			result.edges[AI_index] = ab;
 			auto split_result = SplitEdge(cd, B);
 			if (split_result.HasPiece(AI)) result.edges[CI_index] = split_result.GetPiece(AI);
@@ -361,15 +387,15 @@ public:
 			return result;
 		}
 
-			// 如果 D 在 AB 上
-			if (IsOnEdge(D, ab)) TAILOR_UNLIKELY{
-				result.edges[CI_index] = cd;
-				auto split_result = SplitEdge(ab, D);
-				if (split_result.HasPiece(AI)) result.edges[AI_index] = split_result.GetPiece(AI);
-				if (split_result.HasPiece(IB)) result.edges[IB_index] = split_result.GetPiece(IB);
-				result.positionType = (SampleInX(A, B, C) > Y(C)) ? Downward : Upward;
-				return result;
-			}
+		// 如果 D 在 AB 上
+		if (IsOnEdge(D, ab)) {
+			result.edges[CI_index] = cd;
+			auto split_result = SplitEdge(ab, D);
+			if (split_result.HasPiece(AI)) result.edges[AI_index] = split_result.GetPiece(AI);
+			if (split_result.HasPiece(IB)) result.edges[IB_index] = split_result.GetPiece(IB);
+			result.positionType = (SampleInX(A, B, C) > Y(C)) ? Downward : Upward;
+			return result;
+		}
 
 		auto ip = core.GetCrossPoint(A, B, C, D);
 

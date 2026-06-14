@@ -10,10 +10,6 @@
 #define TAILOR_NAMESPACE_BEGIN namespace tailor {
 #define TAILOR_NAMESPACE_END }
 
-#define TAILOR_NOINLINE __declspec(noinline)
-#define TAILOR_UNLIKELY [[unlikely]]
-//#define TAILOR_UNLIKELY
-
 TAILOR_NAMESPACE_BEGIN
 
 // 仅关注相对位置和重合详情

@@ -1,7 +1,6 @@
 ﻿#pragma once
 
 namespace detail {
-
 template<EdgeConcept Edge, EdgeAnalyzerConcept<Edge> EdgeAnalyzer, class Container>
 class VertexEventQueue;
 
@@ -746,7 +745,7 @@ public:
 		const auto& ee = GetEdgeEvent((end - 1)->e);
 		winds.windB = ee.windB;
 		winds.windA = ee.windA;
-		if (ee.aggregatedEdges) TAILOR_UNLIKELY{
+		if (ee.aggregatedEdges) {
 			for (auto ae : ee.aggregatedEdges->sourceEdges) {
 				auto& aee = GetEdgeEvent(ae);
 				auto& wind = aee.isPolygonSetB ? winds.windB : winds.windA;
@@ -903,7 +902,6 @@ public:
 	std::vector<EdgeEvent>& edgeEvents;
 	std::vector<TopoVertex> topoVertices;
 };
-
 } // namespace detail
 
 template<EdgeConcept Edge, EdgeAnalyzerConcept<Edge> EdgeAnalyzer>
