@@ -83,11 +83,6 @@ public:
 	// 圆弧构造
 	CurveType Construct(const PointType& a, const PointType& b, const CurveType& from) const {
 		const auto ab = pUtils.Sub(a, b);
-		if (pUtils.Len(ab)<1e-7) {
-			int cccs = 0;
-		}
-
-		
 		if (!IsArc(from)) {
 			if constexpr (std::is_same_v<typename CurveType::UserDataType, void>) {
 				return CurveType(a, b, 0);
@@ -210,16 +205,18 @@ public:
 
 		auto oo = pUtils.Sub(cd_center, ab_center);
 		auto oo_len = pUtils.Len(oo);
-		if (oo_len > (ab_radius + cd_radius)) {
+		// tolerance: 算法倾向于认为两曲线有交点，以避免精度导致的误判
+		if (oo_len > (ab_radius + cd_radius) + tolerance) {
 			// 两圆相离
 			return res;
 		}
-		if (oo_len < std::fabs(ab_radius - cd_radius)) {
+		using std::abs;
+		if (oo_len + tolerance < std::abs(ab_radius - cd_radius)) {
 			// 内含
 			return res;
 		}
 
-		if (std::fabs(oo_len - (ab_radius + cd_radius)) < tolerance) {
+		if (std::abs(oo_len - (ab_radius + cd_radius)) < tolerance) {
 			// 两圆外切
 			auto u = std::atan2(pUtils.Y(oo), pUtils.X(oo));
 			auto p = pUtils.Add(ab_center,
@@ -270,7 +267,7 @@ public:
 		return cTraits.Construct(a, b, from);
 	}
 private:
-	bool IsSamePosition(const PointType& a, const PointType& b,double tolerance) const {
+	bool IsSamePosition(const PointType& a, const PointType& b, double tolerance) const {
 		return pUtils.IsSamePosition(a, b, tolerance);
 	}
 
@@ -551,7 +548,7 @@ public:
 			}
 			// 交点必须在两条曲线上
 			if (!IsOnEdge(pnt.value(), ab) || !IsOnEdge(pnt.value(), cd)) {
-				pnt = std::nullopt;// 与A点重合, 忽略
+				pnt = std::nullopt;// 交点不在两条曲线, 忽略
 				continue;
 			}
 		}
@@ -658,12 +655,12 @@ public:
 			if (tb < ta) tb += TAILOR_2PI;
 			if (tp < ta) tp += TAILOR_2PI;
 
-			return tp <= tb;
+			return tp <= tb + Precision::ValueEpsilon();// 计入误差
 		} else {
 			if (ta < tb) tb -= TAILOR_2PI;
 			if (ta < tp) tp -= TAILOR_2PI;
 
-			return tp >= tb;
+			return tp >= tb - Precision::ValueEpsilon();// 计入误差
 		}
 	}
 
@@ -765,9 +762,9 @@ private:
 		auto b = ab.Point1();
 		if (!core.IsArc(ab)) {
 			auto ab_vec = core.Sub(b, a);
-			if(core.X(ab_vec) < Precision::ValueEpsilon()) {
+			if (core.X(ab_vec) < Precision::ValueEpsilon()) {
 				// 竖直线段, 直接返回采样点的 y 坐标
-				// ??? 
+				// ???
 				return core.Y(p);
 			}
 			return core.Y(a) + core.Y(ab_vec) / core.X(ab_vec) * (core.X(p) - core.X(a));
