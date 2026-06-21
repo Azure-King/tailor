@@ -655,13 +655,17 @@ public:
 			if (tb < ta) tb += TAILOR_2PI;
 			if (tp < ta) tp += TAILOR_2PI;
 
-			return tp <= tb + Precision::ValueEpsilon();// 计入误差
+			// 这里不再使用 Precision::ValueEpsilon() , 改为使用 IsSamePosition, 下同
+			// 原因: 使用 Precision::ValueEpsilon() 可能导致函数判断点在曲线内, 但端点却不重合
+			if (tp <= tb) return true;// 在曲线范围内
 		} else {
 			if (ta < tb) tb -= TAILOR_2PI;
 			if (ta < tp) tp -= TAILOR_2PI;
 
-			return tp >= tb - Precision::ValueEpsilon();// 计入误差
+			if (tp >= tb) return true;
 		}
+		// 有没有什么更稳定更快速的方案呢???
+		return core.IsSamePosition(p, a) || core.IsSamePosition(p, b);
 	}
 
 	SplitEdgeResult<CurveType> SplitEdge(const CurveType& curve, const PointType& p) const {

@@ -326,6 +326,36 @@ public:
 			return result;
 		}
 
+		if (CalcateVertexRelativePosition(A, C) == VertexRelativePositionType::Same) {
+			auto vrp_ab = CalcateVertexRelativePosition(A, B);
+			auto vrp_cd = CalcateVertexRelativePosition(C, D);
+
+			// 如果两条边均竖直向上, 应该命中 IsOnEdge(B, cd) 或 IsOnEdge(D, ab)
+			assert(!(vrp_ab == VertexRelativePositionType::Top
+				&& vrp_cd == VertexRelativePositionType::Top));
+
+			if (vrp_ab == VertexRelativePositionType::Top) {
+				result.positionType = CurveRelativePositionType::Downward;
+			} else if (vrp_cd == VertexRelativePositionType::Top) {
+				result.positionType = CurveRelativePositionType::Upward;
+			} else {
+				auto AB = core.Sub(B, A);
+				auto CD = core.Sub(D, C);
+
+				// 如果曲线为 Top, 此处 x 有可能为很小的负数, 导致下方比较斜率出问题
+				auto ab_k = Y(AB) / X(AB);
+				auto cd_k = Y(CD) / X(CD);
+
+				// 比较斜率大小
+				if (ab_k > cd_k) {
+					result.positionType = CurveRelativePositionType::Downward;
+				} else {
+					result.positionType = CurveRelativePositionType::Upward;
+				}
+			}
+			return result;
+		}
+
 		if (SampleInX(A, B, C) > Y(C)) {
 			result.positionType = CurveRelativePositionType::Downward;
 			return result;
