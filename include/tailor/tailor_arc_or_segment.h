@@ -586,13 +586,19 @@ public:
 			I = inters.points[1].value();
 		}
 
-		res.edges[static_cast<size_t>(PieceType::AI)] = core.Construct(A, I, ab);
-		res.edges[static_cast<size_t>(PieceType::CI)] = core.Construct(C, I, cd);
 		if (!core.IsSamePosition(I, B)) {
+			res.edges[static_cast<size_t>(PieceType::AI)] = core.Construct(A, I, ab);
 			res.edges[static_cast<size_t>(PieceType::IB)] = core.Construct(I, B, ab);
+		} else {
+			// 尽量使用原始数据, 即便 I 与 B 被判定为重合, 此处也不应写成 core.Construct(A, I, ab)
+			// 以上的写法可能引入不必要的误差, 导致计算出现问题, 例如: 圆心计算不重合
+			res.edges[static_cast<size_t>(PieceType::AI)] = ab;
 		}
 		if (!core.IsSamePosition(I, D)) {
+			res.edges[static_cast<size_t>(PieceType::CI)] = core.Construct(C, I, cd);
 			res.edges[static_cast<size_t>(PieceType::ID)] = core.Construct(I, D, cd);
+		} else {
+			res.edges[static_cast<size_t>(PieceType::CI)] = cd;
 		}
 		return res;
 	}
