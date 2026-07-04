@@ -207,7 +207,7 @@ static void RunBooleanOps(const std::string& tag,
 		<< ", Vertex groups: " << drafting.vertexEvents.size() << std::endl;
 
 	// 序列化 drafting 到文件
-	tailor::polygon_io::WriteDraftingFile<Arc>("D://drafting.txt", drafting.edgeEvent, drafting.vertexEvents);
+	//tailor::polygon_io::WriteDraftingFile<Arc>("D://drafting.txt", drafting.edgeEvent, drafting.vertexEvents);
 
 	{
 		auto polys = IntersectionPattern().Stitch(drafting);
@@ -258,11 +258,11 @@ int main() {
 	std::cout << "Data directory: " << dataDir << std::endl;
 
 	std::vector<std::string> files = {
-		//"error_poly.txt",   "error_poly2.txt",  "error_poly3.txt",
-		//"error_poly4.txt",  "error_poly5.txt",  "error_poly6.txt",
-		//"error_poly7.txt",  "error_poly8.txt",  "error_poly9.txt",
-		//"error_poly10.txt", "error_poly11.txt", "error_poly12.txt",
-		//"error_poly13.txt", "error_poly14.txt",
+		"error_poly.txt",   "error_poly2.txt",  "error_poly3.txt",
+		"error_poly4.txt",  "error_poly5.txt",  "error_poly6.txt",
+		"error_poly7.txt",  "error_poly8.txt",  "error_poly9.txt",
+		"error_poly10.txt", "error_poly11.txt", "error_poly12.txt",
+		"error_poly13.txt", "error_poly14.txt",
 		"error_poly15.txt",
 	};
 
