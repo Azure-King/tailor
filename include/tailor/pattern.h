@@ -1,6 +1,5 @@
 ﻿#pragma once
 #include "tailor_concept.h"
-#include <assert.h>
 #include <array>
 #include <vector>
 #include <ranges>
@@ -33,43 +32,43 @@ enum class BoundaryType :short {
 };
 
 namespace {
-	inline bool IsBoundary(BoundaryType type) {
-		return type == BoundaryType::UpperBoundary
-			|| type == BoundaryType::LowerBoundary;
-	}
-	inline bool IsBoundaryX(BoundaryType type) {
-		return type == BoundaryType::UpperBoundary
-			|| type == BoundaryType::LowerBoundary
-			|| type == BoundaryType::InsideConjugateBoundary
-			|| type == BoundaryType::OutsideConjugateBoundary;
-		//return (static_cast<int>(type) & 0b0011) != 0;
-	}
-	constexpr BoundaryType RemoveUpperBoundary(BoundaryType type) {
-		return static_cast<BoundaryType>(static_cast<int>(type) &
-			static_cast<int>(BoundaryType::LowerBoundary));
-	}
+inline bool IsBoundary(BoundaryType type) {
+	return type == BoundaryType::UpperBoundary
+		|| type == BoundaryType::LowerBoundary;
+}
+inline bool IsBoundaryX(BoundaryType type) {
+	return type == BoundaryType::UpperBoundary
+		|| type == BoundaryType::LowerBoundary
+		|| type == BoundaryType::InsideConjugateBoundary
+		|| type == BoundaryType::OutsideConjugateBoundary;
+	//return (static_cast<int>(type) & 0b0011) != 0;
+}
+constexpr BoundaryType RemoveUpperBoundary(BoundaryType type) {
+	return static_cast<BoundaryType>(static_cast<int>(type) &
+		static_cast<int>(BoundaryType::LowerBoundary));
+}
 
-	constexpr BoundaryType RemoveLowerBoundary(BoundaryType type) {
-		return static_cast<BoundaryType>(static_cast<int>(type) &
-			static_cast<int>(BoundaryType::UpperBoundary));
-	}
+constexpr BoundaryType RemoveLowerBoundary(BoundaryType type) {
+	return static_cast<BoundaryType>(static_cast<int>(type) &
+		static_cast<int>(BoundaryType::UpperBoundary));
+}
 
-	constexpr bool HasLowerBoundary(BoundaryType type) {
-		return (static_cast<int>(type) & static_cast<int>(BoundaryType::LowerBoundary)) != 0;
-	}
-	constexpr bool HasUpperBoundary(BoundaryType type) {
-		return (static_cast<int>(type) & static_cast<int>(BoundaryType::UpperBoundary)) != 0;
-	}
+constexpr bool HasLowerBoundary(BoundaryType type) {
+	return (static_cast<int>(type) & static_cast<int>(BoundaryType::LowerBoundary)) != 0;
+}
+constexpr bool HasUpperBoundary(BoundaryType type) {
+	return (static_cast<int>(type) & static_cast<int>(BoundaryType::UpperBoundary)) != 0;
+}
 
-	inline BoundaryType ReverseBoundary(BoundaryType type) {
-		assert(IsBoundary(type));
-		return (type == BoundaryType::UpperBoundary) ?
-			BoundaryType::LowerBoundary :
-			BoundaryType::UpperBoundary;
-	}
-	constexpr bool IsContainBoundary(BoundaryType a, BoundaryType b) {
-		return (static_cast<short>(a) & static_cast<short>(b)) == static_cast<short>(b);
-	}
+inline BoundaryType ReverseBoundary(BoundaryType type) {
+	TAILOR_ASSERT(IsBoundary(type));
+	return (type == BoundaryType::UpperBoundary) ?
+		BoundaryType::LowerBoundary :
+		BoundaryType::UpperBoundary;
+}
+constexpr bool IsContainBoundary(BoundaryType a, BoundaryType b) {
+	return (static_cast<short>(a) & static_cast<short>(b)) == static_cast<short>(b);
+}
 }
 
 // 等于指定环绕数
@@ -159,7 +158,7 @@ public:
 	template<class... Args>
 	ConditionFillType(Args&&... args) :condition(std::forward<Args>(args)...) {
 		// condition(0) 必须为 false, tailor 规定外部环绕从 0 开始
-		assert(!condition(0));
+		TAILOR_ASSERT(!condition(0));
 	}
 
 	BoundaryType operator()(const EdgeFillStatus& status) const {
@@ -202,7 +201,7 @@ public:
 	template<class... Args>
 	ConditionFillType2(Args&&... args) :condition(std::forward<Args>(args)...) {
 		// condition(0) 必须为 false, tailor 规定外部环绕从 0 开始
-		assert(!condition(0));
+		TAILOR_ASSERT(!condition(0));
 	}
 
 	BoundaryType operator()(const EdgeFillStatus& status) const {
@@ -267,8 +266,6 @@ struct PolyTree {
 	std::vector<PolyTree<Edge>> children;
 };
 
-
-
 // 0 <- Inside
 // 1 <- Outside
 // 2 <- UpperBoundary
@@ -287,8 +284,8 @@ class BoundaryTypeIndexMap {
 
 public:
 	static constexpr Size Index(BoundaryType type) {
-		assert(static_cast<Size>(type) < 12);
-		assert(indexMap[static_cast<Size>(type)] != invalidIndex);
+		TAILOR_ASSERT(static_cast<Size>(type) < 12);
+		TAILOR_ASSERT(indexMap[static_cast<Size>(type)] != invalidIndex);
 
 		return indexMap[static_cast<Size>(type)];
 	}
@@ -316,7 +313,7 @@ class UnionOperation {
 	// | UpperBoundary           | Outside                 | UpperBoundary           |                         |
 	// | UpperBoundary           | UpperBoundary           | UpperBoundary           |                         |
 	// | UpperBoundary           | LowerBoundary           | Inside                  | InsideConjugateBoundary |
-	// | UpperBoundary           | InsideConjugateBoundary | InsideConjugateBoundary | Inside                  | 
+	// | UpperBoundary           | InsideConjugateBoundary | InsideConjugateBoundary | Inside                  |
 	// | UpperBoundary           | OutsideConjugateBoundary| UpperBoundary           |                         |
 	// | LowerBoundary           | Inside                  | Inside                  |                         |
 	// | LowerBoundary           | Outside                 | LowerBoundary           |                         |
@@ -500,7 +497,7 @@ class IntersectionOperation {
 	// | UpperBoundary           | Inside                  | UpperBoundary           |                         |
 	// | UpperBoundary           | Outside                 | Outside                 |                         |
 	// | UpperBoundary           | UpperBoundary           | UpperBoundary           |                         |
-	// | UpperBoundary           | LowerBoundary           | LowerBoundary           | OutsideConjugateBoundary|
+	// | UpperBoundary           | LowerBoundary           | Outside                 | OutsideConjugateBoundary|
 	// | UpperBoundary           | InsideConjugateBoundary | UpperBoundary           |                         |
 	// | UpperBoundary           | OutsideConjugateBoundary| OutsideConjugateBoundary| Outside                 |
 	// | LowerBoundary           | Inside                  | LowerBoundary           |                         |
@@ -524,7 +521,7 @@ class IntersectionOperation {
 	static constexpr std::array<BoundaryType, 36> intersectionMap{
 		Inside,Outside,UpperBoundary,LowerBoundary,InsideConjugateBoundary,OutsideConjugateBoundary,
 		Outside,Outside,Outside,Outside,Outside,Outside,
-		UpperBoundary,Outside,UpperBoundary,LowerBoundary,UpperBoundary,OutsideConjugateBoundary,
+		UpperBoundary,Outside,UpperBoundary,Outside,UpperBoundary,OutsideConjugateBoundary,
 		LowerBoundary,Outside,Outside,LowerBoundary,LowerBoundary,OutsideConjugateBoundary,
 		InsideConjugateBoundary,Outside,UpperBoundary,LowerBoundary,Outside,Outside,
 		OutsideConjugateBoundary,Outside,OutsideConjugateBoundary,OutsideConjugateBoundary,Outside,OutsideConjugateBoundary,
@@ -540,7 +537,6 @@ public:
 class ChooseFunctionBase {
 protected:
 
-
 	class Hedgehog {
 	private:
 		using enum BoundaryType;
@@ -552,7 +548,7 @@ protected:
 		Hedgehog(Span0&& l, Span1&& r) :left(std::forward<Span0>(l)), right(std::forward<Span1>(r)) {}
 
 		PolyEdgeInfo FindNextCCW(PolyEdgeInfo current, const std::vector<BoundaryType>& types) const {
-			assert(IsBoundary(current.type));
+			TAILOR_ASSERT(IsBoundary(current.type));
 
 			if (current.type == UpperBoundary) {
 				if (types[current.id] == InsideConjugateBoundary) {
@@ -561,7 +557,7 @@ protected:
 
 				auto find = std::find_if(right.begin(), right.end(),
 					[target = current.id](Handle handle) { return target == handle; });
-				assert(find != right.end());
+				TAILOR_ASSERT(find != right.end());
 
 				// 找第一个下边界
 				for (auto it = find + 1; it != right.end(); ++it) {
@@ -584,7 +580,7 @@ protected:
 
 				auto find = std::find_if(left.begin(), left.end(),
 					[target = current.id](Handle handle) { return target == handle; });
-				assert(find != left.end());
+				TAILOR_ASSERT(find != left.end());
 
 				// 找第一个上边界
 				for (auto it = std::make_reverse_iterator(find); it != left.rend(); ++it) {
@@ -602,12 +598,12 @@ protected:
 				}
 			}
 
-			assert(false);
+			TAILOR_ASSERT(false);
 			return {};
 		}
 
 		PolyEdgeInfo FindNextCW(PolyEdgeInfo current, const std::vector<BoundaryType>& types) const {
-			assert(IsBoundary(current.type));
+			TAILOR_ASSERT(IsBoundary(current.type));
 
 			if (current.type == LowerBoundary) {
 				if (types[current.id] == OutsideConjugateBoundary) {
@@ -616,7 +612,7 @@ protected:
 
 				auto find = std::find_if(left.begin(), left.end(),
 					[target = current.id](Handle handle) { return target == handle; });
-				assert(find != left.end());
+				TAILOR_ASSERT(find != left.end());
 
 				// 找第一个下边界
 				for (auto it = find + 1; it != left.end(); ++it) {
@@ -639,7 +635,7 @@ protected:
 
 				auto find = std::find_if(right.begin(), right.end(),
 					[target = current.id](Handle handle) { return target == handle; });
-				assert(find != right.end());
+				TAILOR_ASSERT(find != right.end());
 
 				// 找第一个上边界
 				for (auto it = std::make_reverse_iterator(find); it != right.rend(); ++it) {
@@ -657,7 +653,7 @@ protected:
 				}
 			}
 
-			assert(false);
+			TAILOR_ASSERT(false);
 			return {};
 		}
 	};
@@ -667,9 +663,7 @@ protected:
 		const auto& vertex = drafting.vertexEvents[vertex_id];
 		return Hedgehog(vertex.endGroup.Span(), vertex.startGroup.Span());
 	}
-
 };
-
 
 // 内角连接
 class InternalAngleConnectChooseFunction : private ChooseFunctionBase {
@@ -679,8 +673,8 @@ public:
 		const auto& edge = drafting.edgeEvent[current.id];
 		Handle vertex_id = (current.type == BoundaryType::UpperBoundary) ? edge.startPntGroup : edge.endPntGroup;
 
-		assert(current.id != tailor::npos);
-		assert(IsBoundary(current.type));
+		TAILOR_ASSERT(current.id != tailor::npos);
+		TAILOR_ASSERT(IsBoundary(current.type));
 
 		auto hedgehog = MakeHedgehog<Drafting>(drafting, vertex_id);
 
@@ -696,8 +690,8 @@ public:
 		const auto& edge = drafting.edgeEvent[current.id];
 		Handle vertex_id = (current.type == BoundaryType::UpperBoundary) ? edge.startPntGroup : edge.endPntGroup;
 
-		assert(current.id != tailor::npos);
-		assert(IsBoundary(current.type));
+		TAILOR_ASSERT(current.id != tailor::npos);
+		TAILOR_ASSERT(IsBoundary(current.type));
 
 		auto hedgehog = MakeHedgehog<Drafting>(drafting, vertex_id);
 
@@ -735,17 +729,17 @@ public:
 			BoundaryType curr_boundary = first_boundary;
 
 			do {
-				assert(tailor::npos != current);
+				TAILOR_ASSERT(tailor::npos != current);
 
 				auto edge_id = current;
 				const auto& edge = edges[edge_id];
-				assert(IsBoundaryX(curr_boundary));
+				TAILOR_ASSERT(IsBoundaryX(curr_boundary));
 
 				// 选择下一条边, 直到构建出完整的循环
 				auto [next, next_boundary] = choose(drafting, types, { edge_id, curr_boundary });
 
-				assert(tailor::npos != next);
-				assert(IsBoundaryX(next_boundary));
+				TAILOR_ASSERT(tailor::npos != next);
+				TAILOR_ASSERT(IsBoundaryX(next_boundary));
 
 				poly.edges.push_back({ current, curr_boundary });
 
@@ -755,7 +749,7 @@ public:
 
 			// 重置所有已处理边的类型
 			for (auto& e : poly.edges) {
-				assert(
+				TAILOR_ASSERT(
 					e.type == BoundaryType::UpperBoundary ||
 					e.type == BoundaryType::LowerBoundary
 				);
@@ -800,7 +794,7 @@ public:
 public:
 	OrdinaryBoolOperationPattern() = default;
 
-		template<class SFT, class CFT, class CT, class BOT>
+	template<class SFT, class CFT, class CT, class BOT>
 	OrdinaryBoolOperationPattern(SFT&& sft, CFT&& cft, CT&& ct, BOT&& bt) :
 		fillTypeA(std::forward<SFT>(sft)),
 		fillTypeB(std::forward<CFT>(cft)),
@@ -886,7 +880,7 @@ private:
 			if (cur_vertex_id == vertex_id) {
 				if (edge_info.id == result.id) {
 					// 共轭边
-					assert(
+					TAILOR_ASSERT(
 						types[edge_info.id] == BoundaryType::InsideConjugateBoundary ||
 						types[edge_info.id] == BoundaryType::OutsideConjugateBoundary
 					);
@@ -925,8 +919,8 @@ private:
 			result = edge_info;
 		}
 
-		assert(tailor::npos != result.id);
-		assert(tailor::npos != vertex_id);
+		TAILOR_ASSERT(tailor::npos != result.id);
+		TAILOR_ASSERT(tailor::npos != vertex_id);
 
 		return result;
 	}
@@ -966,7 +960,7 @@ public:
 
 		static constexpr size_t invalid_group = static_cast<size_t>(-1);
 		constexpr auto CalcId = [](const PolyEdgeInfo& edge)->size_t {
-			assert(IsBoundary(edge.type));
+			TAILOR_ASSERT(IsBoundary(edge.type));
 			return edge.id * 2 + static_cast<size_t>(edge.type == BoundaryType::LowerBoundary);
 			};
 
@@ -994,7 +988,7 @@ public:
 
 			// 如果最低边是下边界, 则为外边界
 			group_info.lowestEdgeInfo = LowestEdge(drafting, polys[i], types2);
-			assert(IsBoundary(group_info.lowestEdgeInfo.type));
+			TAILOR_ASSERT(IsBoundary(group_info.lowestEdgeInfo.type));
 			group_info.isOuter = HasLowerBoundary(group_info.lowestEdgeInfo.type);
 		}
 
@@ -1019,9 +1013,9 @@ public:
 
 			// 由于 flbe 已经是最低的了, 所以不会找到依旧为本组的更低的边
 			auto group_id = groups[CalcId(fbe)];
-			assert(i != group_id);
-			assert(invalid_group != group_id);
-			assert(IsBoundaryX(types2[fbe.id]));
+			TAILOR_ASSERT(i != group_id);
+			TAILOR_ASSERT(invalid_group != group_id);
+			TAILOR_ASSERT(IsBoundaryX(types2[fbe.id]));
 
 			if (group_infos[group_id].isOuter == group_info.isOuter) {
 				// i 和 group_id 同级
@@ -1053,7 +1047,7 @@ public:
 		for (size_t i = 0, n = group_infos.size(); i < n; ++i) {
 			auto& group_info = group_infos[i];
 			if (invalid_group == group_info.parent) {
-				assert(group_info.isOuter); // 最外层一定是外环
+				TAILOR_ASSERT(group_info.isOuter); // 最外层一定是外环
 				continue; // 为根节点
 			}
 			indegree[group_info.parent]++;

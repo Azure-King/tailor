@@ -50,7 +50,7 @@ public:
 
 	// https://blog.csdn.net/axin620/article/details/148099679
 	PointType Center(const CurveType& curve) const {
-		assert(IsArc(curve));
+		TAILOR_ASSERT(IsArc(curve));
 
 		auto bluge = curve.Bulge();
 		auto b = 0.5 * (1 / bluge - bluge);
@@ -66,7 +66,7 @@ public:
 	}
 
 	CoordinateType Radius(const CurveType& curve) const {
-		assert(IsArc(curve));
+		TAILOR_ASSERT(IsArc(curve));
 
 		auto vec = pUtils.Sub(Point1(curve), Point0(curve));
 		auto g = pUtils.Len(vec);
@@ -287,7 +287,7 @@ private:
 		auto v = ab_x * ap_x + ab_y * ap_y;
 
 		auto length_sq = ab_x * ab_x + ab_y * ab_y;
-		assert(length_sq > 0);
+		TAILOR_ASSERT(length_sq > 0);
 		return v / length_sq;
 	}
 private:
@@ -381,7 +381,7 @@ public:
 
 		const auto& A = core.Point0(ab);
 		const auto& C = core.Point0(cd);
-		assert(CalcateVertexRelativePosition(A, C) == tailor::VertexRelativePositionType::Same);
+		TAILOR_ASSERT(CalcateVertexRelativePosition(A, C) == tailor::VertexRelativePositionType::Same);
 
 		auto tan_A = Tangent(A, ab);
 		auto tan_C = Tangent(C, cd);
@@ -604,7 +604,7 @@ public:
 	}
 
 	PointType Tangent(const PointType& p, const CurveType& curve) const {
-		assert(IsOnEdge(p, curve));
+		TAILOR_ASSERT(IsOnEdge(p, curve));
 
 		if (!core.IsArc(curve)) {
 			auto dir = core.Sub(curve.Point1(), curve.Point0());
@@ -684,6 +684,11 @@ public:
 	// 将一条曲线分割为在X上单调的若干曲线段，通过输出迭代器输出结果
 	template <typename OutIt>
 	OutIt SplitToMonotonic(const CurveType& edge, OutIt out) const {
+		// 退化圆弧: bulge表示法无法表达完整圆弧，端点重合的圆弧直接视为退化
+		if (core.IsSamePosition(core.Point0(edge), core.Point1(edge))) {
+			return out;
+		}
+
 		if (!ArcSegmentTraits<ArcType>{}.IsArc(edge)) {
 			*out++ = edge;
 			return out;

@@ -250,8 +250,24 @@ struct edge_analysis_vertex {
 template<class EdgeAnalyzer, class Edge>
 using edge_analysis_vertex_t = edge_analysis_vertex<EdgeAnalyzer, Edge>::type;
 
+#ifndef TAILOR_ASSERT
+  #ifdef TAILOR_ASSERT_USE_STD
+    #include <cassert>
+    #define TAILOR_ASSERT(cond, ...) assert(cond)
+  #else
+    #define TAILOR_ASSERT(cond, ...) \
+      do { \
+        if (!(cond)) { \
+          throw ::tailor::TailorError(__VA_ARGS__); \
+        } \
+      } while(0)
+  #endif
+#endif
+
 class TailorError :public std::runtime_error {
 public:
+	TailorError() :std::runtime_error("tailor assertion failed") {
+	}
 	template<class... Args>
 	TailorError(Args&&... args) :std::runtime_error(std::forward<Args>(args)...) {
 	}

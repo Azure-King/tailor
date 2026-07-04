@@ -2,7 +2,6 @@
 #include "tailor_concept.h"
 #include "tailor_point.h"
 #include <algorithm>
-#include <assert.h>
 #include <cmath>
 
 TAILOR_NAMESPACE_BEGIN
@@ -248,7 +247,7 @@ public:
 		const auto& C = cd.Point0();
 		const auto& D = cd.Point1();
 
-		assert(CalcateVertexRelativePosition(A, C) == VertexRelativePositionType::Same);
+		TAILOR_ASSERT(CalcateVertexRelativePosition(A, C) == VertexRelativePositionType::Same);
 
 		CurveRelativePositionResult2<CurveType> result{};
 
@@ -286,7 +285,7 @@ public:
 		auto vrp_cd = CalcateVertexRelativePosition(C, D);
 
 		// 如果两条边均竖直向上, 应该命中 IsOnEdge(B, cd) 或 IsOnEdge(D, ab)
-		assert(!(vrp_ab == VertexRelativePositionType::Top
+		TAILOR_ASSERT(!(vrp_ab == VertexRelativePositionType::Top
 			&& vrp_cd == VertexRelativePositionType::Top));
 
 		if (vrp_ab == VertexRelativePositionType::Top) {
@@ -331,7 +330,7 @@ public:
 			auto vrp_cd = CalcateVertexRelativePosition(C, D);
 
 			// 如果两条边均竖直向上, 应该命中 IsOnEdge(B, cd) 或 IsOnEdge(D, ab)
-			assert(!(vrp_ab == VertexRelativePositionType::Top
+			TAILOR_ASSERT(!(vrp_ab == VertexRelativePositionType::Top
 				&& vrp_cd == VertexRelativePositionType::Top));
 
 			if (vrp_ab == VertexRelativePositionType::Top) {
@@ -379,7 +378,7 @@ public:
 			auto vrp_cd = CalcateVertexRelativePosition(C, D);
 
 			// 如果两条边均竖直向上, 应该命中 IsOnEdge(B, cd) 或 IsOnEdge(D, ab)
-			assert(!(vrp_ab == VertexRelativePositionType::Top
+			TAILOR_ASSERT(!(vrp_ab == VertexRelativePositionType::Top
 				&& vrp_cd == VertexRelativePositionType::Top));
 
 			if (vrp_ab == VertexRelativePositionType::Top) {
@@ -451,7 +450,7 @@ public:
 	}
 
 	SplitEdgeResult<CurveType> SplitEdge(const CurveType& seg, const PointType& p) const {
-		assert(IsOnEdge(p, seg));
+		TAILOR_ASSERT(IsOnEdge(p, seg));
 		SplitEdgeResult<CurveType> result{};
 
 		const auto& A = seg.Point0();
@@ -468,6 +467,11 @@ public:
 
 	template <typename OutIt>
 	OutIt SplitToMonotonic(const CurveType& edge, OutIt out) {
+		const auto& a = Start(edge);
+		const auto& b = End(edge);
+		if (CalcateVertexRelativePosition(a, b) != VertexRelativePositionType::Same) {
+			return out; // 退化线段: 端点重合则跳过
+		}
 		*out++ = edge;
 		return out;
 	}

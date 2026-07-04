@@ -26,7 +26,7 @@ public:
 	}
 
 	Vertex GetPnt(VertexEventGroup& p, size_t i = 0) {
-		assert(p.edges[i] != npos);
+		TAILOR_ASSERT(p.edges[i] != npos);
 		const auto& edge_event = GetUpdatedEdge(p, i);
 		return p.isStart[0] ? ea.Start(edge_event.edge) : ea.End(edge_event.edge);
 	}
@@ -35,7 +35,7 @@ public:
 	 * @brief 获取更新后的边, 如果更新后的边依旧被废弃, 则说明该边被融合, 有其他的聚合边代替
 	 */
 	const EdgeEvent& GetUpdatedEdge(VertexEventGroup& p, size_t i = 0) const {
-		assert(p.edges[i] != npos);
+		TAILOR_ASSERT(p.edges[i] != npos);
 		const EdgeEvent* event = &edgeEvents[p.edges[i]];
 		if (p.isStart[0]) {
 			while (event->discarded && event->firstSplit != npos) {
@@ -169,8 +169,8 @@ public:
 			// 该分支处理 EdgeRelativePosition 无效的情况, 因为所有起点事件的位置相同,
 			// 所以该情况在本函数中应该仅会存在最多一次, 且仅需测试一次
 
-			assert(result.HasPiece(AI));
-			assert(result.HasPiece(IB));
+			TAILOR_ASSERT(result.HasPiece(AI));
+			TAILOR_ASSERT(result.HasPiece(IB));
 
 			// 裂解 it 指向的边
 			auto split_result = SplitEvent(it->e,
@@ -450,7 +450,7 @@ public:
 				OnlyFocusOnRelativePositionDetailsWithoutCoincidence{}
 			);
 
-			assert(erp.HasPiece(CI));
+			TAILOR_ASSERT(erp.HasPiece(CI));
 
 			VertexEventGroup group{};
 			if (erp.HasPiece(IB)) {
@@ -541,7 +541,7 @@ public:
 	}
 
 	decltype(auto) GetPointInVertexEvent(const VertexEvent& ve) {
-		assert(!GetEdgeEvent(ve.e).discarded);
+		TAILOR_ASSERT(!GetEdgeEvent(ve.e).discarded);
 		return ve.start ? ea.Start(GetEdgeEvent(ve.e).edge) : ea.End(GetEdgeEvent(ve.e).edge);
 	}
 
@@ -656,8 +656,8 @@ public:
 
 	template<class EdgeRelativePositionResult>
 	HandleCoincidentEdgesResult HandleCoincidentEdges(Handle ab_handle, Handle cd_handle, EdgeRelativePositionResult&& result) {
-		assert(result.HasPiece(CI));
-		assert(CurveRelativePositionType::Coincident == result.RelativePositionType());
+		TAILOR_ASSERT(result.HasPiece(CI));
+		TAILOR_ASSERT(CurveRelativePositionType::Coincident == result.RelativePositionType());
 
 		if (result.HasPiece(IB) && result.HasPiece(ID)) {
 			auto [ai_event, ib_event, id_event] = RegisterEdge(
@@ -828,7 +828,7 @@ public:
 
 		TopoVertex& start_vertex = GetVertexEvent(e.startPntGroup);
 		bool success = start_vertex.startGroup.ReplaceEvent(e.id, this->edgeEvents);
-		assert(success);
+		TAILOR_ASSERT(success);
 	}
 
 	void InsertVertexEvent(std::vector<VertexEvent>& start_events, const VertexEvent& new_event) {
@@ -934,7 +934,7 @@ inline auto Tailor<Edge, EdgeAnalyzer>::Execute() -> PatternDrafting {
 		queue.PopAllEvents(start_events, end_events);
 
 		// 事件处理的有效边总数必须为偶数
-		assert((
+		TAILOR_ASSERT((
 			set.CalcVaildEdgeSize(start_events) +
 			set.CalcVaildEdgeSize(end_events))
 			% 2 == 0);

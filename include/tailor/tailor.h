@@ -4,7 +4,6 @@
 #include <set>
 #include <queue>
 #include <algorithm>
-#include <assert.h>
 #include <variant> // C++17
 #include <functional>
 #include <memory>
@@ -62,7 +61,7 @@ struct VertexEventGroup {
 	}
 
 	void Add(Handle edge_a, bool is_start_a) {
-		assert(edges[MAX_VERTEX_SIZE - 1] == npos); // 必须要求空间装入
+		TAILOR_ASSERT(edges[MAX_VERTEX_SIZE - 1] == npos); // 必须要求空间装入
 		for (size_t i = 0; i < MAX_VERTEX_SIZE; ++i) {
 			if (edges[i] != npos) continue;
 			edges[i] = edge_a; isStart[i] = is_start_a;
@@ -71,7 +70,7 @@ struct VertexEventGroup {
 	}
 
 	void Add(Handle edge_a, bool is_start_a, Handle edge_b, bool is_start_b) {
-		assert(edges[MAX_VERTEX_SIZE - 1] == npos); // 必须要求空间装入
+		TAILOR_ASSERT(edges[MAX_VERTEX_SIZE - 1] == npos); // 必须要求空间装入
 		for (size_t i = 0; i < MAX_VERTEX_SIZE - 1; ++i) {
 			if (edges[i] != npos) continue;
 			edges[i] = edge_a; isStart[i] = is_start_a;
@@ -208,7 +207,7 @@ public:
 	 */
 	template<class EdgeEvent>
 	bool ReplaceEvent(Handle ended_event_id, const std::vector<EdgeEvent>& edge_events) {
-		assert(edge_events[ended_event_id].end);
+		TAILOR_ASSERT(edge_events[ended_event_id].end);
 		return std::visit(HandleReplacer<EdgeEvent>{ ended_event_id, edge_events }, array);
 	}
 
